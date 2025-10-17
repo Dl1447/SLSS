@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<!-- 
+Student Learning Situation Statistics (SLSS)
+
+A lightweight classroom management web application for tracking student performance,
+homework submission status, and course evaluations.
+
+Copyright (c) 2025 Alan ab
+Licensed under the MIT License
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>初一二班学情统计</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        light: '#F3F4F6',
+                        dark: '#1F2937'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'shine': 'shine 2s infinite',
+                        'glass-flow': 'glassFlow 8s ease-in-out infinite alternate'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        shine: {
+                            '0%': { backgroundPosition: '-200% 0' },
+                            '100%': { backgroundPosition: '200% 0' }
+                        },
+                        glassFlow: {
+                            '0%': { backgroundPosition: '0% 50%' },
+                            '100%': { backgroundPosition: '100% 50%' }
+                        }
+                    }
+                },
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .star-active {
+                color: #F59E0B;
+            }
+            .star-inactive {
+                color: #D1D5DB;
+            }
+            .glass-effect {
+                background: rgba(255, 255, 255, 0.7);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            }
+            .glass-effect-dark {
+                background: rgba(30, 41, 59, 0.7);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+            }
+            .gradient-border {
+                position: relative;
+                border-radius: 12px;
+                z-index: 0;
+            }
+            .gradient-border::before {
+                content: '';
+                position: absolute;
+                inset: -2px;
+                z-index: -1;
+                border-radius: 14px;
+                background: linear-gradient(90deg, #3B82F6, #8B5CF6, #10B981, #F59E0B);
+                background-size: 400% 400%;
+                animation: gradient-animation 15s ease infinite;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            .gradient-border:hover::before {
+                opacity: 1;
+            }
+            .hover-lift {
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .hover-lift:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 24px -8px rgba(59, 130, 246, 0.15);
+            }
+            .text-gradient {
+                background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+            }
+            .shine-effect {
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+                background-size: 200% 100%;
+            }
+        }
+        
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    
+    <div class="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-100 via-transparent to-purple-100 opacity-70"></div>
+    <div class="fixed inset-0 -z-20 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-100 via-transparent to-blue-100 opacity-70"></div>
+    
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        
+        <header class="mb-8 text-center">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-gradient mb-2 animate-pulse-slow">初一二班学情统计</h1>
+            <p class="text-gray-600"></p>
+        </header>
+
+        <div class="glass-effect rounded-2xl shadow-xl overflow-hidden mb-8 hover-lift">
+            
+            <div class="p-5 flex justify-between items-center border-b border-white/20">
+                <div class="flex items-center gap-3">
+                    <i class="fa fa-calendar text-primary text-2xl animate-pulse-slow"></i>
+                    <h2 id="current-date" class="text-2xl font-semibold text-dark"></h2>
+                </div>
+                <button id="export-excel" class="gradient-border bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg">
+                    <i class="fa fa-download"></i>
+                    <span>导出Excel</span>
+                </button>
+            </div>
+
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8">
+                
+                <div class="lg:col-span-1">
+                    <div class="glass-effect rounded-xl p-6 h-full hover-lift">
+                        <h3 class="text-xl font-semibold mb-5 text-dark flex items-center gap-2">
+                            <i class="fa fa-exclamation-circle text-warning"></i>
+                            未交作业记录
+                        </h3>
+                        
+                        <div class="space-y-6">
+                            
+                            <div class="mb-6">
+                                <label for="subject-select" class="block text-sm font-medium text-gray-700 mb-2">选择科目</label>
+                                <select id="subject-select" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                                    <option value="语文">语文</option>
+                                    <option value="数学">数学</option>
+                                    <option value="英语">英语</option>
+                                    <option value="物理">物理</option>
+                                    <option value="化学">化学</option>
+                                    <option value="生物">生物</option>
+                                    <option value="历史">历史</option>
+                                    <option value="地理">地理</option>
+                                    <option value="政治">政治</option>
+                                </select>
+                            </div>
+                            
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">选择未交作业学生学号</label>
+                                <div id="student-numbers" class="flex flex-wrap gap-2 max-h-64 overflow-y-auto scrollbar-hide p-3 glass-effect border border-white/30 rounded-xl">
+                                    
+                                </div>
+                            </div>
+                            
+                            
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">已选学号</label>
+                                <div id="selected-numbers" class="flex flex-wrap gap-2 p-4 glass-effect border border-white/30 rounded-xl min-h-[80px] transition-all duration-300"></div>
+                            </div>
+                            
+                            
+                            <button id="add-homework-record" class="w-full gradient-border bg-secondary hover:bg-secondary/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg mb-6">
+                                添加未交作业记录
+                            </button>
+                            
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">已记录列表</label>
+                                <div id="homework-records" class="space-y-3 max-h-64 overflow-y-auto scrollbar-hide p-3 glass-effect border border-white/30 rounded-xl"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <div class="lg:col-span-2">
+                    <div class="glass-effect rounded-xl p-6 h-full hover-lift">
+                        <h3 class="text-xl font-semibold mb-5 text-dark flex items-center gap-2">
+                            <i class="fa fa-book text-primary animate-pulse-slow"></i>
+                            课程表现评分
+                        </h3>
+                        
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">选择星期</label>
+                            <div class="flex flex-wrap gap-3">
+                                <button class="day-btn gradient-border bg-primary text-white px-5 py-3 rounded-xl transition-all duration-300 hover:shadow-lg" data-day="周一">周一</button>
+                                <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周二">周二</button>
+                                <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周三">周三</button>
+                                <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周四">周四</button>
+                                <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周五">周五</button>
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="mb-6">
+                            <button id="add-new-course" class="gradient-border bg-secondary hover:bg-secondary/90 text-white px-5 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2">
+                                <i class="fa fa-plus"></i>
+                                <span>添加新课</span>
+                            </button>
+                        </div>
+                        
+                        
+                        <div id="schedule-container" class="space-y-4 max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-hide pb-4">
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        <footer class="text-center text-gray-500 text-sm mt-12">
+            <p>GlidePlum &copy; 2025 Alan ab</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化变量
+        let currentDay = "周一";
+        let selectedStudentNumbers = [];
+        let scheduleData = {
+            "周一": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+            "周二": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+            "周三": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+            "周四": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+            "周五": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+            "周六": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+            "周日": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' }))
+        };
+        let homeworkRecords = [];
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置当前日期
+            updateCurrentDate();
+            
+            // 生成学号选择器
+            generateStudentNumberButtons();
+            
+            // 生成课程表
+            generateSchedule();
+            
+            // 绑定事件监听器
+            bindEventListeners();
+        });
+        
+        // 更新当前日期
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+        }
+        
+        // 生成学号选择器
+        function generateStudentNumberButtons() {
+            const container = document.getElementById('student-numbers');
+            for (let i = 1; i <= 50; i++) {
+                if (i >= 21 && i <= 29) continue;
+                
+                const button = document.createElement('button');
+                button.className = 'student-number-btn w-12 h-12 flex items-center justify-center rounded-full glass-effect border border-white/30 hover:bg-primary/10 transition-all duration-300 hover-lift';
+                button.textContent = i;
+                button.dataset.number = i;
+                
+                button.addEventListener('click', function() {
+                    toggleStudentNumber(i);
+                });
+                
+                container.appendChild(button);
+            }
+        }
+        
+        // 切换学号选择状态
+        function toggleStudentNumber(number) {
+            const index = selectedStudentNumbers.indexOf(number);
+            const button = document.querySelector(`.student-number-btn[data-number="${number}"]`);
+            
+            if (index === -1) {
+                selectedStudentNumbers.push(number);
+                if (button) button.classList.add('bg-primary/20', 'border-primary');
+            } else {
+                selectedStudentNumbers.splice(index, 1);
+                if (button) button.classList.remove('bg-primary/20', 'border-primary');
+            }
+            
+            updateSelectedNumbersDisplay();
+        }
+        
+        // 更新已选学号显示
+        function updateSelectedNumbersDisplay() {
+            const container = document.getElementById('selected-numbers');
+            container.innerHTML = '';
+            
+            selectedStudentNumbers.sort((a, b) => a - b).forEach(number => {
+                const tag = document.createElement('div');
+                tag.className = 'inline-flex items-center glass-effect border border-white/30 bg-primary/20 text-primary px-3 py-1.5 rounded-full text-sm hover-lift transition-all duration-300';
+                tag.innerHTML = `${number} <span class="ml-1 cursor-pointer remove-number">&times;</span>`;
+                tag.dataset.number = number;
+                
+                const removeBtn = tag.querySelector('.remove-number');
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleStudentNumber(number);
+                });
+                
+                container.appendChild(tag);
+            });
+            
+            if (selectedStudentNumbers.length === 0) {
+                container.innerHTML = '<span class="text-gray-400">暂无选择</span>';
+            }
+        }
+        
+        // 生成课程表
+        function generateSchedule() {
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = '';
+            
+            const courses = scheduleData[currentDay];
+            courses.forEach(course => {
+                container.appendChild(createCourseItem(course));
+            });
+        }
+        
+        // 创建课程项
+        function createCourseItem(course) {
+            const courseDiv = document.createElement('div');
+            courseDiv.className = 'glass-effect rounded-xl p-5 shadow-sm border border-white/30 hover-lift transition-all duration-300 relative';
+            courseDiv.innerHTML = `
+                <div class="flex items-center mb-4">
+                    <span class="bg-primary/20 text-primary font-semibold rounded-full w-10 h-10 flex items-center justify-center mr-4 hover-lift transition-all duration-300">${course.id}</span>
+                    <input type="text" placeholder="请输入科目名称" value="${course.subject || ''}" 
+                           class="flex-1 px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" 
+                           data-field="subject" data-id="${course.id}">
+                </div>
+                <button class="absolute top-4 right-4 text-gray-400 hover:text-danger transition-colors delete-course-btn" data-id="${course.id}">
+                    <i class="fa fa-trash"></i>
+                </button>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">课堂表现评分</label>
+                    <div class="flex gap-2" data-field="rating" data-id="${course.id}">
+                        ${Array(5).fill(null).map((_, i) => {
+                            const starIndex = i + 1;
+                            return `<i class="fa fa-star text-lg cursor-pointer transition-transform hover:scale-110 ${starIndex <= course.rating ? 'star-active' : 'star-inactive'}" data-rating="${starIndex}"></i>`;
+                        }).join('')}
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">课堂不足及建议</label>
+                    <textarea placeholder="请输入课堂不足及建议" rows="2" 
+                              class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" 
+                              data-field="notes" data-id="${course.id}">${course.notes || ''}</textarea>
+                </div>`;
+            
+            // 绑定科目输入事件
+            const subjectInput = courseDiv.querySelector('[data-field="subject"]');
+            subjectInput.addEventListener('input', function() {
+                updateCourseData(course.id, 'subject', this.value);
+            });
+            
+            // 绑定评分点击事件
+            const ratingContainer = courseDiv.querySelector('[data-field="rating"]');
+            const stars = ratingContainer.querySelectorAll('.fa-star');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    updateCourseData(course.id, 'rating', rating);
+                    updateStarDisplay(stars, rating);
+                    
+                    // 添加点击动画效果
+                    this.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        this.classList.remove('animate-pulse');
+                    }, 500);
+                });
+                
+                // 添加悬停效果
+                star.addEventListener('mouseenter', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    // 临时高亮星星用于预览
+                    stars.forEach(s => {
+                        const sRating = parseInt(s.dataset.rating);
+                        if (sRating <= rating) {
+                            s.classList.add('scale-125');
+                        }
+                    });
+                });
+                
+                star.addEventListener('mouseleave', function() {
+                    // 恢复星星状态
+                    stars.forEach(s => {
+                        s.classList.remove('scale-125');
+                    });
+                });
+            });
+            
+            // 绑定备注输入事件
+            const notesInput = courseDiv.querySelector('[data-field="notes"]');
+            notesInput.addEventListener('input', function() {
+                updateCourseData(course.id, 'notes', this.value);
+            });
+            
+            // 绑定删除按钮事件
+            const deleteBtn = courseDiv.querySelector('.delete-course-btn');
+            deleteBtn.addEventListener('click', function() {
+                const courseId = parseInt(this.dataset.id);
+                deleteCourse(courseId);
+            });
+            
+            return courseDiv;
+        }
+        
+        // 更新课程数据
+        function updateCourseData(courseId, field, value) {
+            const courseIndex = scheduleData[currentDay].findIndex(c => c.id === courseId);
+            if (courseIndex !== -1) {
+                scheduleData[currentDay][courseIndex][field] = value;
+            }
+        }
+        
+        // 更新星星显示
+        function updateStarDisplay(stars, rating) {
+            stars.forEach(star => {
+                const starRating = parseInt(star.dataset.rating);
+                if (starRating <= rating) {
+                    star.classList.add('star-active');
+                    star.classList.remove('star-inactive');
+                } else {
+                    star.classList.remove('star-active');
+                    star.classList.add('star-inactive');
+                }
+            });
+        }
+        
+        // 添加新课程
+        function addNewCourse() {
+            // 获取当前星期的课程数据
+            const courses = scheduleData[currentDay];
+            
+            // 计算新课程的ID（当前最大ID + 1）
+            const maxId = courses.length > 0 ? Math.max(...courses.map(c => c.id)) : 0;
+            const newCourse = { id: maxId + 1, subject: '', rating: 0, notes: '' };
+            
+            // 添加新课程到数据中
+            courses.push(newCourse);
+            
+            // 更新课程表显示
+            generateSchedule();
+            
+            // 为了更好的用户体验，滚动到最后添加的课程
+            const container = document.getElementById('schedule-container');
+            container.scrollTop = container.scrollHeight;
+            
+            // 高亮显示新添加的课程（添加一个临时动画效果）
+            setTimeout(() => {
+                const newCourseElement = container.lastElementChild;
+                if (newCourseElement) {
+                    newCourseElement.classList.add('bg-primary/10');
+                    setTimeout(() => {
+                        newCourseElement.classList.remove('bg-primary/10');
+                    }, 2000);
+                }
+            }, 100);
+        }
+        
+        // 删除课程
+        function deleteCourse(courseId) {
+            // 确认删除操作
+            if (!confirm('确定要删除这节课吗？')) {
+                return;
+            }
+            
+            // 获取当前星期的课程数据
+            const courses = scheduleData[currentDay];
+            
+            // 找到要删除的课程索引
+            const courseIndex = courses.findIndex(c => c.id === courseId);
+            
+            if (courseIndex !== -1) {
+                // 获取要删除的元素进行动画效果
+                const container = document.getElementById('schedule-container');
+                const courseElements = container.querySelectorAll('.glass-effect.rounded-xl.p-5');
+                const elementToDelete = courseElements[courseIndex];
+                
+                if (elementToDelete) {
+                    // 添加删除动画
+                    elementToDelete.style.transition = 'all 0.3s ease';
+                    elementToDelete.style.opacity = '0';
+                    elementToDelete.style.transform = 'translateX(20px)';
+                    elementToDelete.style.height = elementToDelete.offsetHeight + 'px';
+                }
+                
+                // 从数据中删除课程
+                setTimeout(() => {
+                    courses.splice(courseIndex, 1);
+                    
+                    // 重新生成课程表
+                    generateSchedule();
+                }, 300);
+            }
+        }
+        
+        // 绑定事件监听器
+        function bindEventListeners() {
+            // 星期切换按钮
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.day-btn').forEach(b => {
+                        b.classList.remove('gradient-border', 'bg-primary', 'text-white');
+                        b.classList.add('glass-effect', 'border', 'border-white/30', 'hover:bg-primary/10');
+                    });
+                    
+                    this.classList.add('gradient-border', 'bg-primary', 'text-white');
+                    this.classList.remove('glass-effect', 'border', 'border-white/30', 'hover:bg-primary/10');
+                    
+                    // 添加切换动画效果
+                    const container = document.getElementById('schedule-container');
+                    container.style.opacity = '0';
+                    container.style.transform = 'translateY(20px)';
+                    container.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    
+                    setTimeout(() => {
+                        generateSchedule();
+                        container.style.opacity = '1';
+                        container.style.transform = 'translateY(0)';
+                    }, 150);
+                    
+                    currentDay = this.dataset.day;
+                    generateSchedule();
+                });
+            });
+            
+            // 添加未交作业记录
+            document.getElementById('add-homework-record').addEventListener('click', function() {
+                const subject = document.getElementById('subject-select').value;
+                if (selectedStudentNumbers.length === 0) {
+                    alert('请至少选择一名未交作业的学生');
+                    return;
+                }
+                
+                const record = {
+                    id: Date.now(),
+                    subject: subject,
+                    students: [...selectedStudentNumbers],
+                    date: new Date().toLocaleDateString('zh-CN')
+                };
+                
+                homeworkRecords.push(record);
+                displayHomeworkRecords();
+                
+                // 清空选择
+                selectedStudentNumbers.forEach(number => {
+                    const button = document.querySelector(`.student-number-btn[data-number="${number}"]`);
+                    if (button) button.classList.remove('bg-primary/20', 'border-primary');
+                });
+                selectedStudentNumbers = [];
+                updateSelectedNumbersDisplay();
+            });
+            
+            // 导出Excel
+            document.getElementById('export-excel').addEventListener('click', function() {
+                // 添加点击动画效果
+                this.classList.add('animate-pulse');
+                setTimeout(() => {
+                    this.classList.remove('animate-pulse');
+                    exportToExcel();
+                }, 300);
+            });
+            
+            // 添加滚动时的视差效果
+            window.addEventListener('scroll', function() {
+                const scrollY = window.scrollY;
+                const header = document.querySelector('header');
+                header.style.transform = `translateY(${scrollY * 0.1}px)`;
+            });
+            
+            // 添加新课按钮事件
+            document.getElementById('add-new-course').addEventListener('click', function() {
+                // 添加点击动画效果
+                this.classList.add('animate-pulse');
+                setTimeout(() => {
+                    this.classList.remove('animate-pulse');
+                    addNewCourse();
+                }, 300);
+            });
+        }
+        
+        // 显示未交作业记录
+        function displayHomeworkRecords() {
+            const container = document.getElementById('homework-records');
+            container.innerHTML = '';
+            
+            homeworkRecords.forEach(record => {
+                const recordDiv = document.createElement('div');
+                recordDiv.className = 'glass-effect p-4 rounded-xl shadow-sm border border-white/30 relative hover-lift transition-all duration-300';
+                recordDiv.innerHTML = `
+                    <div class="text-sm text-gray-500">${record.date}</div>
+                    <div class="font-medium text-dark">${record.subject}</div>
+                    <div class="text-sm">未交学号: ${record.students.sort((a, b) => a - b).join(', ')}</div>
+                    <button class="absolute top-2 right-2 text-gray-400 hover:text-danger transition-colors delete-record" data-id="${record.id}">
+                        <i class="fa fa-times"></i>
+                    </button>
+                `;
+                
+                const deleteBtn = recordDiv.querySelector('.delete-record');
+                deleteBtn.addEventListener('click', function() {
+                    const recordId = parseInt(this.dataset.id);
+                    homeworkRecords = homeworkRecords.filter(r => r.id !== recordId);
+                    displayHomeworkRecords();
+                });
+                
+                container.appendChild(recordDiv);
+            });
+            
+            if (homeworkRecords.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 text-center py-4">暂无记录</div>';
+            }
+        }
+        
+        // 导出Excel
+        function exportToExcel() {
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            
+            // 准备课程数据
+            const scheduleDataForExcel = [];
+            Object.keys(scheduleData).forEach(day => {
+                scheduleData[day].forEach(course => {
+                    if (course.subject) { // 只导出有数据的课程
+                        scheduleDataForExcel.push({
+                            '星期': day,
+                            '课时': course.id,
+                            '科目': course.subject,
+                            '评分': course.rating,
+                            '课堂不足及建议': course.notes
+                        });
+                    }
+                });
+            });
+            
+            // 准备未交作业数据
+            const homeworkDataForExcel = [];
+            homeworkRecords.forEach(record => {
+                record.students.forEach(student => {
+                    homeworkDataForExcel.push({
+                        '日期': record.date,
+                        '科目': record.subject,
+                        '未交学号': student
+                    });
+                });
+            });
+            
+            // 创建工作表
+            if (scheduleDataForExcel.length > 0) {
+                const wsSchedule = XLSX.utils.json_to_sheet(scheduleDataForExcel);
+                XLSX.utils.book_append_sheet(wb, wsSchedule, '课程表现');
+            }
+            
+            if (homeworkDataForExcel.length > 0) {
+                const wsHomework = XLSX.utils.json_to_sheet(homeworkDataForExcel);
+                XLSX.utils.book_append_sheet(wb, wsHomework, '未交作业记录');
+            }
+            
+            // 导出文件
+            const dateStr = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `班级统计_${dateStr}.xlsx`);
+        }
+    </script>
+</body>
+</html>
+
