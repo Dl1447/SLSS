@@ -12,6 +12,10 @@ Licensed under the MIT License
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="description" content="轻量级课堂统计管理Web应用">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="bjbz.png">
     <title>初一二班学情统计</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -282,10 +286,158 @@ Licensed under the MIT License
         };
         let homeworkRecords = [];
         
+        // IndexedDB 数据库
+        const DB_NAME = 'slss-database';
+        const DB_VERSION = 1;
+        let db = null;
+        
+        // 初始化 IndexedDB
+        function initDatabase() {
+            return new Promise((resolve, reject) => {
+                if (db) {
+                    resolve(db);
+                    return;
+                }
+                
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = () => {
+                    console.error('数据库打开失败');
+                    reject(request.error);
+                };
+                
+                request.onsuccess = () => {
+                    db = request.result;
+                    console.log('数据库打开成功');
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    
+                    // 创建课程表数据存储
+                    if (!db.objectStoreNames.contains('schedule')) {
+                        const scheduleStore = db.createObjectStore('schedule', { keyPath: 'day' });
+                    }
+                    
+                    // 创建作业记录数据存储
+                    if (!db.objectStoreNames.contains('homework')) {
+                        const homeworkStore = db.createObjectStore('homework', { keyPath: 'id' });
+                        homeworkStore.createIndex('by-date', 'date', { unique: false });
+                        homeworkStore.createIndex('by-subject', 'subject', { unique: false });
+                    }
+                };
+            });
+        }
+        
+        // 保存课程表数据到 IndexedDB
+        function saveScheduleData() {
+            if (!db) return;
+            
+            const transaction = db.transaction(['schedule'], 'readwrite');
+            const store = transaction.objectStore('schedule');
+            
+            Object.keys(scheduleData).forEach(day => {
+                store.put({ day: day, courses: scheduleData[day] });
+            });
+            
+            transaction.oncomplete = () => {
+                console.log('课程表数据保存成功');
+            };
+            
+            transaction.onerror = () => {
+                console.error('课程表数据保存失败');
+            };
+        }
+        
+        // 从 IndexedDB 加载课程表数据
+        function loadScheduleData() {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    resolve(scheduleData);
+                    return;
+                }
+                
+                const transaction = db.transaction(['schedule'], 'readonly');
+                const store = transaction.objectStore('schedule');
+                const allRequest = store.getAll();
+                
+                allRequest.onsuccess = () => {
+                    const data = allRequest.result;
+                    if (data.length > 0) {
+                        data.forEach(item => {
+                            if (scheduleData.hasOwnProperty(item.day)) {
+                                scheduleData[item.day] = item.courses || [];
+                            }
+                        });
+                    }
+                    resolve(scheduleData);
+                };
+                
+                allRequest.onerror = () => {
+                    console.error('加载课程表数据失败');
+                    resolve(scheduleData);
+                };
+            });
+        }
+        
+        // 保存作业记录到 IndexedDB
+        function saveHomeworkRecords() {
+            if (!db) return;
+            
+            const transaction = db.transaction(['homework'], 'readwrite');
+            const store = transaction.objectStore('homework');
+            
+            homeworkRecords.forEach(record => {
+                store.put(record);
+            });
+            
+            transaction.oncomplete = () => {
+                console.log('作业记录保存成功');
+            };
+            
+            transaction.onerror = () => {
+                console.error('作业记录保存失败');
+            };
+        }
+        
+        // 从 IndexedDB 加载作业记录
+        function loadHomeworkRecords() {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    resolve(homeworkRecords);
+                    return;
+                }
+                
+                const transaction = db.transaction(['homework'], 'readonly');
+                const store = transaction.objectStore('homework');
+                const allRequest = store.getAll();
+                
+                allRequest.onsuccess = () => {
+                    homeworkRecords = allRequest.result;
+                    resolve(homeworkRecords);
+                };
+                
+                allRequest.onerror = () => {
+                    console.error('加载作业记录失败');
+                    resolve(homeworkRecords);
+                };
+            });
+        }
+        
         // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // 设置当前日期
             updateCurrentDate();
+            
+            // 初始化数据库并加载数据
+            try {
+                await initDatabase();
+                await loadScheduleData();
+                await loadHomeworkRecords();
+            } catch (error) {
+                console.error('数据初始化失败:', error);
+            }
             
             // 生成学号选择器
             generateStudentNumberButtons();
@@ -293,8 +445,24 @@ Licensed under the MIT License
             // 生成课程表
             generateSchedule();
             
+            // 显示作业记录
+            displayHomeworkRecords();
+            
             // 绑定事件监听器
             bindEventListeners();
+            
+            // 注册Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker 注册成功:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.log('Service Worker 注册失败:', error);
+                        });
+                });
+            }
         });
         
         // 更新当前日期
@@ -468,6 +636,8 @@ Licensed under the MIT License
             const courseIndex = scheduleData[currentDay].findIndex(c => c.id === courseId);
             if (courseIndex !== -1) {
                 scheduleData[currentDay][courseIndex][field] = value;
+                // 自动保存到 IndexedDB
+                saveScheduleData();
             }
         }
         
@@ -600,6 +770,8 @@ Licensed under the MIT License
                 
                 homeworkRecords.push(record);
                 displayHomeworkRecords();
+                // 保存到 IndexedDB
+                saveHomeworkRecords();
                 
                 // 清空选择
                 selectedStudentNumbers.forEach(number => {
@@ -659,7 +831,9 @@ Licensed under the MIT License
                 deleteBtn.addEventListener('click', function() {
                     const recordId = parseInt(this.dataset.id);
                     homeworkRecords = homeworkRecords.filter(r => r.id !== recordId);
-                    displayHomeworkRecords();
+                displayHomeworkRecords();
+                // 保存到 IndexedDB
+                saveHomeworkRecords();
                 });
                 
                 container.appendChild(recordDiv);
