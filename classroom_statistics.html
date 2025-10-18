@@ -188,15 +188,7 @@ Licensed under the MIT License
                             <div class="mb-6">
                                 <label for="subject-select" class="block text-sm font-medium text-gray-700 mb-2">选择科目</label>
                                 <select id="subject-select" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
-                                    <option value="语文">语文</option>
-                                    <option value="数学">数学</option>
-                                    <option value="英语">英语</option>
-                                    <option value="物理">物理</option>
-                                    <option value="化学">化学</option>
-                                    <option value="生物">生物</option>
-                                    <option value="历史">历史</option>
-                                    <option value="地理">地理</option>
-                                    <option value="政治">政治</option>
+                                    <!-- 科目将通过JavaScript动态生成 -->
                                 </select>
                             </div>
                             
@@ -286,9 +278,26 @@ Licensed under the MIT License
         };
         let homeworkRecords = [];
         
+        // 班级配置 - 可自定义
+        let classConfig = {
+            minStudentId: 1,
+            maxStudentId: 50,
+            excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29], // 排除的学号
+            subjects: ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治"],
+            gradeSubjects: {
+                "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+            },
+            classInfo: {
+                name: "初一二班",
+                grade: "初一"
+            }
+        };
+        
         // IndexedDB 数据库
         const DB_NAME = 'slss-database';
-        const DB_VERSION = 1;
+        const DB_VERSION = 3; // 更新版本号以支持年级关联学科功能
         let db = null;
         
         // 初始化 IndexedDB
@@ -299,35 +308,446 @@ Licensed under the MIT License
                     return;
                 }
                 
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                
-                request.onerror = () => {
-                    console.error('数据库打开失败');
-                    reject(request.error);
-                };
-                
-                request.onsuccess = () => {
-                    db = request.result;
-                    console.log('数据库打开成功');
-                    resolve(db);
-                };
-                
-                request.onupgradeneeded = (event) => {
-                    db = event.target.result;
+                try {
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
                     
-                    // 创建课程表数据存储
-                    if (!db.objectStoreNames.contains('schedule')) {
-                        const scheduleStore = db.createObjectStore('schedule', { keyPath: 'day' });
-                    }
+                    request.onerror = () => {
+                        console.error('数据库打开失败:', request.error);
+                        // 即使数据库失败，也返回resolve以便应用继续运行
+                        resolve(null);
+                    };
                     
-                    // 创建作业记录数据存储
-                    if (!db.objectStoreNames.contains('homework')) {
-                        const homeworkStore = db.createObjectStore('homework', { keyPath: 'id' });
-                        homeworkStore.createIndex('by-date', 'date', { unique: false });
-                        homeworkStore.createIndex('by-subject', 'subject', { unique: false });
-                    }
-                };
+                    request.onsuccess = () => {
+                        db = request.result;
+                        console.log('数据库打开成功');
+                        resolve(db);
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        db = event.target.result;
+                        
+                        // 创建或更新课程表数据存储
+                        if (!db.objectStoreNames.contains('schedule')) {
+                            db.createObjectStore('schedule', { keyPath: 'day' });
+                        }
+                        
+                        // 创建或更新作业记录数据存储
+                        if (!db.objectStoreNames.contains('homework')) {
+                            const homeworkStore = db.createObjectStore('homework', { keyPath: 'id' });
+                            if (!homeworkStore.indexNames.contains('by-date')) {
+                                homeworkStore.createIndex('by-date', 'date', { unique: false });
+                            }
+                            if (!homeworkStore.indexNames.contains('by-subject')) {
+                                homeworkStore.createIndex('by-subject', 'subject', { unique: false });
+                            }
+                        }
+                        
+                        // 创建或更新配置存储
+                        if (!db.objectStoreNames.contains('config')) {
+                            const configStore = db.createObjectStore('config', { keyPath: 'id' });
+                            // 存储默认配置
+                            configStore.put({ 
+                                id: 'class-config', 
+                                data: {
+                                    minStudentId: 1,
+                                    maxStudentId: 50,
+                                    excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29],
+                                    subjects: ["语文", "数学", "英语", "历史", "地理", "政治"],
+                                    gradeSubjects: {
+                                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                                    },
+                                    classInfo: {
+                                        name: "初一二班",
+                                        grade: "初一"
+                                    }
+                                }
+                            });
+                        }
+                    };
+                } catch (error) {
+                    console.error('数据库初始化异常:', error);
+                    resolve(null);
+                }
             });
+        }
+        
+        // 保存班级配置
+        function saveClassConfig() {
+            if (!db) return;
+            
+            const transaction = db.transaction(['config'], 'readwrite');
+            const store = transaction.objectStore('config');
+            store.put({ id: 'class-config', data: classConfig });
+            
+            transaction.oncomplete = () => {
+                console.log('班级配置保存成功');
+            };
+        }
+        
+        // 加载班级配置
+        function loadClassConfig() {
+            return new Promise((resolve) => {
+                // 确保gradeSubjects配置始终存在
+                if (!classConfig.gradeSubjects) {
+                    classConfig.gradeSubjects = {
+                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                    };
+                }
+                
+                try {
+                    if (!db) {
+                        // 数据库不可用时，确保学科列表正确
+                        ensureSubjectsBasedOnGrade();
+                        resolve(classConfig);
+                        return;
+                    }
+                    
+                    const transaction = db.transaction(['config'], 'readonly');
+                    const store = transaction.objectStore('config');
+                    const request = store.get('class-config');
+                    
+                    request.onsuccess = () => {
+                        if (request.result && request.result.data) {
+                            classConfig = request.result.data;
+                            // 确保gradeSubjects配置存在
+                            if (!classConfig.gradeSubjects) {
+                                classConfig.gradeSubjects = {
+                                    "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                                    "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                                    "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                                };
+                            }
+                            // 确保学科列表基于年级正确设置
+                            ensureSubjectsBasedOnGrade();
+                        } else {
+                            // 没有配置数据时，确保学科列表正确
+                            ensureSubjectsBasedOnGrade();
+                        }
+                        // 更新页面标题
+                        document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
+                        resolve(classConfig);
+                    };
+                    
+                    request.onerror = () => {
+                        console.error('加载班级配置失败');
+                        // 出错时确保学科列表正确
+                        ensureSubjectsBasedOnGrade();
+                        resolve(classConfig);
+                    };
+                } catch (error) {
+                    console.error('加载班级配置异常:', error);
+                    // 异常时确保学科列表正确
+                    ensureSubjectsBasedOnGrade();
+                    resolve(classConfig);
+                }
+            });
+        }
+        
+        // 确保学科列表基于年级正确设置
+        function ensureSubjectsBasedOnGrade() {
+            const grade = classConfig.classInfo.grade;
+            if (!grade) {
+                // 如果没有年级设置，默认使用初一
+                classConfig.classInfo.grade = "初一";
+                classConfig.subjects = [...classConfig.gradeSubjects["初一"]];
+            } else if (classConfig.gradeSubjects[grade]) {
+                // 如果是预设年级，关联对应学科
+                classConfig.subjects = [...classConfig.gradeSubjects[grade]];
+            } else {
+                // 自定义年级使用默认基础学科
+                classConfig.subjects = ['语文', '数学', '英语'];
+            }
+        }
+        
+        // 生成科目选择器
+        function generateSubjectSelect() {
+            const select = document.getElementById('subject-select');
+            select.innerHTML = '';
+            
+            classConfig.subjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                option.textContent = subject;
+                select.appendChild(option);
+            });
+        }
+        
+        // 添加配置和导入功能
+        function addConfigAndImportFeatures() {
+            // 添加配置按钮到头部
+            const header = document.querySelector('header');
+            const configBtn = document.createElement('button');
+            configBtn.id = 'config-btn';
+            configBtn.className = 'gradient-border bg-accent hover:bg-accent/90 text-white px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg';
+            configBtn.innerHTML = '<i class="fa fa-cog"></i><span>配置</span>';
+            header.appendChild(configBtn);
+            
+            // 添加导入按钮
+            const exportBtn = document.getElementById('export-excel');
+            const importBtn = document.createElement('button');
+            importBtn.id = 'import-data';
+            importBtn.className = 'gradient-border bg-secondary hover:bg-secondary/90 text-white px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg ml-3';
+            importBtn.innerHTML = '<i class="fa fa-upload"></i><span>导入数据</span>';
+            exportBtn.parentNode.appendChild(importBtn);
+            
+            // 创建隐藏的文件输入
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            fileInput.id = 'file-import';
+            document.body.appendChild(fileInput);
+            
+            // 绑定导入按钮事件
+            importBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // 处理文件导入
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        
+                        // 验证导入的数据结构
+                        if (importedData.homeworkRecords) {
+                            homeworkRecords = importedData.homeworkRecords;
+                            displayHomeworkRecords();
+                            saveHomeworkRecords();
+                        }
+                        
+                        if (importedData.scheduleData) {
+                            scheduleData = importedData.scheduleData;
+                            generateSchedule();
+                            saveScheduleData();
+                        }
+                        
+                        if (importedData.classConfig) {
+                            classConfig = importedData.classConfig;
+                            generateSubjectSelect();
+                            generateStudentNumberButtons();
+                            saveClassConfig();
+                            // 更新页面标题
+                            document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
+                        }
+                        
+                        alert('数据导入成功！');
+                    } catch (error) {
+                        alert('数据导入失败：文件格式错误或内容无效');
+                    }
+                    
+                    // 重置文件输入
+                    this.value = '';
+                };
+                reader.readAsText(file);
+            });
+            
+            // 绑定配置按钮事件
+            configBtn.addEventListener('click', openConfigModal);
+            
+            // 创建配置模态框
+            createConfigModal();
+        }
+        
+        // 创建配置模态框
+        function createConfigModal() {
+            const modal = document.createElement('div');
+            modal.id = 'config-modal';
+            modal.className = 'fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="glass-effect rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <div class="p-6 border-b border-white/20">
+                        <h2 class="text-2xl font-bold text-dark flex items-center gap-2">
+                            <i class="fa fa-cog text-accent"></i>
+                            班级配置
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div>
+                            <h3 class="font-medium text-dark mb-3">班级信息</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">班级名称</label>
+                                    <input id="config-class-name" type="text" value="${classConfig.classInfo.name}" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">年级（将自动关联对应学科）</label>
+                                    <select id="config-grade" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                                        <option value="初一" ${classConfig.classInfo.grade === "初一" ? 'selected' : ''}>初一</option>
+                                        <option value="初二" ${classConfig.classInfo.grade === "初二" ? 'selected' : ''}>初二</option>
+                                        <option value="初三" ${classConfig.classInfo.grade === "初三" ? 'selected' : ''}>初三</option>
+                                        <option value="自定义" ${!['初一', '初二', '初三'].includes(classConfig.classInfo.grade) ? 'selected' : ''}>自定义</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-dark mb-3">学号范围</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">最小学号</label>
+                                    <input id="config-min-id" type="number" value="${classConfig.minStudentId}" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">最大学号</label>
+                                    <input id="config-max-id" type="number" value="${classConfig.maxStudentId}" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-dark mb-3">排除的学号</h3>
+                            <input id="config-excluded-ids" type="text" value="${classConfig.excludedIds.join(', ')}" placeholder="用逗号分隔，如：21, 22, 23" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                        </div>
+                        
+
+                        
+                        <div>
+                            <h3 class="font-medium text-dark mb-3">数据管理</h3>
+                            <div class="space-y-3">
+                                <button id="export-all-data" class="w-full gradient-border bg-primary hover:bg-primary/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fa fa-download"></i>
+                                    <span>导出所有数据</span>
+                                </button>
+                                <button id="reset-all-data" class="w-full gradient-border bg-danger hover:bg-danger/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fa fa-refresh"></i>
+                                    <span>重置所有数据</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 border-t border-white/20 flex justify-end gap-3">
+                        <button id="cancel-config" class="px-5 py-2.5 glass-effect border border-white/30 rounded-lg hover:bg-gray-100/50 transition-all duration-300">取消</button>
+                        <button id="save-config" class="px-5 py-2.5 gradient-border bg-accent hover:bg-accent/90 text-white rounded-lg transition-all duration-300 hover:shadow-lg">保存配置</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // 绑定模态框事件
+            document.getElementById('cancel-config').addEventListener('click', closeConfigModal);
+            document.getElementById('save-config').addEventListener('click', saveConfigChanges);
+            document.getElementById('export-all-data').addEventListener('click', exportAllData);
+            document.getElementById('reset-all-data').addEventListener('click', resetAllData);
+        }
+        
+        // 打开配置模态框
+        function openConfigModal() {
+            document.getElementById('config-modal').classList.remove('hidden');
+            // 防止背景滚动
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // 关闭配置模态框
+        function closeConfigModal() {
+            document.getElementById('config-modal').classList.add('hidden');
+            // 恢复背景滚动
+            document.body.style.overflow = '';
+        }
+        
+        // 保存配置更改
+        function saveConfigChanges() {
+            try {
+                classConfig.classInfo.name = document.getElementById('config-class-name').value || '班级';
+                const selectedGrade = document.getElementById('config-grade').value;
+                
+                // 如果选择了预设年级，自动关联对应学科
+                if (selectedGrade !== '自定义' && classConfig.gradeSubjects[selectedGrade]) {
+                    classConfig.classInfo.grade = selectedGrade;
+                    classConfig.subjects = [...classConfig.gradeSubjects[selectedGrade]]; // 复制预设学科列表
+                } else {
+                    classConfig.classInfo.grade = '自定义';
+                    // 对于自定义年级，使用默认的基础学科
+                    classConfig.subjects = ['语文', '数学', '英语'];
+                }
+                
+                classConfig.minStudentId = parseInt(document.getElementById('config-min-id').value) || 1;
+                classConfig.maxStudentId = parseInt(document.getElementById('config-max-id').value) || 50;
+                
+                // 解析排除的学号
+                const excludedIdsStr = document.getElementById('config-excluded-ids').value;
+                classConfig.excludedIds = excludedIdsStr ? excludedIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
+                
+                // 验证配置
+                if (classConfig.minStudentId > classConfig.maxStudentId) {
+                    alert('最小学号不能大于最大学号！');
+                    return;
+                }
+                
+                // 保存配置
+                saveClassConfig();
+                
+                // 更新UI
+                generateSubjectSelect();
+                generateStudentNumberButtons();
+                document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
+                
+                closeConfigModal();
+                alert('配置保存成功！');
+            } catch (error) {
+                alert('配置保存失败：' + error.message);
+            }
+        }
+        
+        // 导出所有数据
+        function exportAllData() {
+            const allData = {
+                classConfig: classConfig,
+                scheduleData: scheduleData,
+                homeworkRecords: homeworkRecords,
+                exportDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(allData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `SLSS_数据导出_${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+        
+        // 重置所有数据
+        function resetAllData() {
+            if (!confirm('确定要重置所有数据吗？此操作不可撤销！')) {
+                return;
+            }
+            
+            // 重置数据
+            scheduleData = {
+                "周一": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+                "周二": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+                "周三": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+                "周四": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+                "周五": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+                "周六": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
+                "周日": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' }))
+            };
+            homeworkRecords = [];
+            selectedStudentNumbers = [];
+            
+            // 更新UI
+            generateSchedule();
+            displayHomeworkRecords();
+            updateSelectedNumbersDisplay();
+            
+            // 保存到数据库
+            saveScheduleData();
+            saveHomeworkRecords();
+            
+            alert('所有数据已重置！');
         }
         
         // 保存课程表数据到 IndexedDB
@@ -425,43 +845,122 @@ Licensed under the MIT License
             });
         }
         
+        // 创建并显示加载动画
+        function showLoader() {
+            // 检查加载器是否已存在
+            let loader = document.getElementById('page-loader');
+            if (!loader) {
+                loader = document.createElement('div');
+                loader.id = 'page-loader';
+                loader.className = 'fixed inset-0 bg-black/70 z-50 flex items-center justify-center';
+                loader.innerHTML = `
+                    <div class="glass-effect p-8 rounded-2xl flex flex-col items-center">
+                        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mb-4"></div>
+                        <p id="loader-text" class="text-white text-lg">加载中...</p>
+                    </div>
+                `;
+                document.body.appendChild(loader);
+            }
+            loader.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // 隐藏加载动画
+        function hideLoader() {
+            const loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // 更新加载动画文本
+        function updateLoaderText(text) {
+            const loaderText = document.getElementById('loader-text');
+            if (loaderText) {
+                loaderText.textContent = text;
+            }
+        }
+        
         // 初始化页面
         document.addEventListener('DOMContentLoaded', async function() {
-            // 设置当前日期
-            updateCurrentDate();
+            // 显示加载动画
+            showLoader();
             
-            // 初始化数据库并加载数据
             try {
-                await initDatabase();
-                await loadScheduleData();
-                await loadHomeworkRecords();
+                // 设置当前日期
+                updateCurrentDate();
+                
+                // 确保classConfig包含gradeSubjects配置
+                if (!classConfig.gradeSubjects) {
+                    classConfig.gradeSubjects = {
+                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                    };
+                }
+                
+                // 如果没有选择年级，默认使用初一
+                if (!classConfig.classInfo.grade) {
+                    classConfig.classInfo.grade = "初一";
+                    classConfig.subjects = [...classConfig.gradeSubjects["初一"]];
+                }
+                
+                // 更新加载状态
+                updateLoaderText('加载数据中...');
+                
+                // 初始化数据库并加载数据（容错处理）
+                try {
+                    await initDatabase();
+                    // 尝试加载数据，但即使失败也继续
+                    try { await loadScheduleData(); } catch (e) { console.error('加载课程表失败:', e); }
+                    try { await loadHomeworkRecords(); } catch (e) { console.error('加载作业记录失败:', e); }
+                    try { await loadClassConfig(); } catch (e) { console.error('加载班级配置失败:', e); }
+                } catch (error) {
+                    console.error('数据库初始化失败:', error);
+                    // 即使数据库失败，也继续初始化应用
+                }
+                
+                // 更新加载状态
+                updateLoaderText('生成界面元素...');
+                
+                // 生成科目选择器
+                generateSubjectSelect();
+                
+                // 生成学号选择器
+                generateStudentNumberButtons();
+                
+                // 生成课程表
+                generateSchedule();
+                
+                // 显示作业记录
+                displayHomeworkRecords();
+                
+                // 绑定事件监听器
+                bindEventListeners();
+                
+                // 添加配置按钮和导入功能
+                addConfigAndImportFeatures();
+                
+                // 注册Service Worker
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('service-worker.js')
+                            .then(registration => {
+                                console.log('Service Worker 注册成功:', registration.scope);
+                            })
+                            .catch(error => {
+                                console.log('Service Worker 注册失败:', error);
+                            });
+                    });
+                }
             } catch (error) {
-                console.error('数据初始化失败:', error);
-            }
-            
-            // 生成学号选择器
-            generateStudentNumberButtons();
-            
-            // 生成课程表
-            generateSchedule();
-            
-            // 显示作业记录
-            displayHomeworkRecords();
-            
-            // 绑定事件监听器
-            bindEventListeners();
-            
-            // 注册Service Worker
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/service-worker.js')
-                        .then(registration => {
-                            console.log('Service Worker 注册成功:', registration.scope);
-                        })
-                        .catch(error => {
-                            console.log('Service Worker 注册失败:', error);
-                        });
-                });
+                console.error('初始化失败:', error);
+            } finally {
+                // 隐藏加载动画
+                setTimeout(() => {
+                    hideLoader();
+                }, 500); // 短暂延迟，确保用户能看到加载过程
             }
         });
         
@@ -474,9 +973,46 @@ Licensed under the MIT License
         
         // 生成学号选择器
         function generateStudentNumberButtons() {
+            // 查找或创建批量操作按钮容器
+            let batchContainer = document.getElementById('batch-controls-container');
+            if (!batchContainer) {
+                batchContainer = document.createElement('div');
+                batchContainer.id = 'batch-controls-container';
+                batchContainer.className = 'mb-6';
+                
+                // 将批量操作容器插入到学号选择器之前
+                const container = document.getElementById('student-numbers');
+                container.parentNode.insertBefore(batchContainer, container);
+            }
+            
+            // 设置批量操作按钮
+            batchContainer.innerHTML = `
+                <div class="flex gap-3 p-4 glass-effect border border-white/20 rounded-xl">
+                    <button id="select-all-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
+                        全选
+                    </button>
+                    <button id="select-range-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
+                        选择范围
+                    </button>
+                    <button id="clear-all-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
+                        清空选择
+                    </button>
+                </div>
+            `;
+            
+            // 绑定批量操作事件
+            document.getElementById('select-all-btn').addEventListener('click', selectAllStudents);
+            document.getElementById('select-range-btn').addEventListener('click', selectStudentRange);
+            document.getElementById('clear-all-btn').addEventListener('click', clearAllStudentSelections);
+            
+            // 清空并生成学号按钮
             const container = document.getElementById('student-numbers');
-            for (let i = 1; i <= 50; i++) {
-                if (i >= 21 && i <= 29) continue;
+            container.innerHTML = '';
+            
+            // 根据配置生成学号按钮
+            for (let i = classConfig.minStudentId; i <= classConfig.maxStudentId; i++) {
+                // 跳过排除的学号
+                if (classConfig.excludedIds.includes(i)) continue;
                 
                 const button = document.createElement('button');
                 button.className = 'student-number-btn w-12 h-12 flex items-center justify-center rounded-full glass-effect border border-white/30 hover:bg-primary/10 transition-all duration-300 hover-lift';
@@ -489,6 +1025,64 @@ Licensed under the MIT License
                 
                 container.appendChild(button);
             }
+        }
+        
+        // 批量操作函数
+        function selectAllStudents() {
+            selectedStudentNumbers = [];
+            
+            for (let i = classConfig.minStudentId; i <= classConfig.maxStudentId; i++) {
+                if (!classConfig.excludedIds.includes(i)) {
+                    selectedStudentNumbers.push(i);
+                }
+            }
+            
+            updateStudentNumberButtons();
+            updateSelectedNumbersDisplay();
+        }
+        
+        function selectStudentRange() {
+            const rangeInput = prompt('请输入学号范围（格式：开始-结束，如 1-10）：');
+            if (!rangeInput) return;
+            
+            const [start, end] = rangeInput.split('-').map(Number);
+            if (isNaN(start) || isNaN(end) || start > end) {
+                alert('请输入有效的范围格式！');
+                return;
+            }
+            
+            // 验证范围在有效范围内
+            if (start < classConfig.minStudentId || end > classConfig.maxStudentId) {
+                alert(`范围必须在 ${classConfig.minStudentId}-${classConfig.maxStudentId} 之间！`);
+                return;
+            }
+            
+            // 添加范围内的学号
+            for (let i = start; i <= end; i++) {
+                if (!classConfig.excludedIds.includes(i) && !selectedStudentNumbers.includes(i)) {
+                    selectedStudentNumbers.push(i);
+                }
+            }
+            
+            updateStudentNumberButtons();
+            updateSelectedNumbersDisplay();
+        }
+        
+        function clearAllStudentSelections() {
+            selectedStudentNumbers = [];
+            updateStudentNumberButtons();
+            updateSelectedNumbersDisplay();
+        }
+        
+        function updateStudentNumberButtons() {
+            document.querySelectorAll('.student-number-btn').forEach(button => {
+                const number = parseInt(button.dataset.number);
+                if (selectedStudentNumbers.includes(number)) {
+                    button.classList.add('bg-primary/20', 'border-primary');
+                } else {
+                    button.classList.remove('bg-primary/20', 'border-primary');
+                }
+            });
         }
         
         // 切换学号选择状态
