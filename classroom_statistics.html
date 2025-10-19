@@ -264,6 +264,9 @@ Licensed under the MIT License
     </div>
 
     <script>
+        // 简易账号系统 - 基于 localStorage
+        let currentUser = null;
+        
         // 初始化变量
         let currentDay = "周一";
         let selectedStudentNumbers = [];
@@ -295,9 +298,401 @@ Licensed under the MIT License
             }
         };
         
+        // 密码哈希函数 - 使用简单的SHA-256实现
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        // 创建用户
+        async function createUser(username, password) {
+            // 检查用户是否已存在
+            const users = JSON.parse(localStorage.getItem('slss-users') || '{}');
+            if (users[username]) {
+                return { success: false, message: '用户名已存在' };
+            }
+            
+            // 哈希密码
+            const hashedPassword = await hashPassword(password);
+            
+            // 保存用户信息
+            users[username] = {
+                password: hashedPassword,
+                createdAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('slss-users', JSON.stringify(users));
+            return { success: true, message: '用户创建成功' };
+        }
+        
+        // 用户登录
+        async function loginUser(username, password) {
+            const users = JSON.parse(localStorage.getItem('slss-users') || '{}');
+            const user = users[username];
+            
+            if (!user) {
+                return { success: false, message: '用户名或密码错误' };
+            }
+            
+            // 哈希输入的密码并与存储的哈希进行比较
+            const hashedPassword = await hashPassword(password);
+            if (hashedPassword === user.password) {
+                // 登录成功
+                currentUser = username;
+                localStorage.setItem('slss-current-user', username);
+                
+                // 添加登录时间
+                user.lastLogin = new Date().toISOString();
+                users[username] = user;
+                localStorage.setItem('slss-users', JSON.stringify(users));
+                
+                return { success: true, message: '登录成功' };
+            } else {
+                return { success: false, message: '用户名或密码错误' };
+            }
+        }
+        
+        // 检查用户是否已登录或为访客
+        function checkLoginStatus() {
+            const savedUser = localStorage.getItem('slss-current-user');
+            if (savedUser) {
+                currentUser = savedUser;
+                return true;
+            }
+            return false;
+        }
+        
+        // 用户登出
+        function logoutUser() {
+            currentUser = null;
+            localStorage.removeItem('slss-current-user');
+            showLoginModal();
+        }
+        
+        // 清除账号
+        async function deleteAccount() {
+            // 访客模式不允许清除账号
+            if (currentUser === 'guest') {
+                alert('访客模式不需要清除账号，请直接退出登录！');
+                return;
+            }
+            
+            // 二次确认
+            if (!confirm(`确定要永久删除账号 "${currentUser}" 吗？此操作将删除所有相关数据且无法恢复！`)) {
+                return;
+            }
+            
+            try {
+                // 1. 从 localStorage 中删除用户信息
+                const users = JSON.parse(localStorage.getItem('slss-users') || '{}');
+                delete users[currentUser];
+                localStorage.setItem('slss-users', JSON.stringify(users));
+                
+                // 2. 从 IndexedDB 中删除该用户的所有数据
+                if (db) {
+                    // 删除课程表数据
+                    const scheduleTx = db.transaction('schedule', 'readwrite');
+                    const scheduleStore = scheduleTx.objectStore('schedule');
+                    const scheduleIndex = scheduleStore.index('by-user');
+                    const scheduleRequest = scheduleIndex.openCursor(currentUser);
+                    
+                    scheduleRequest.onsuccess = function(event) {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            cursor.delete();
+                            cursor.continue();
+                        }
+                    };
+                    
+                    // 删除作业记录
+                    const homeworkTx = db.transaction('homework', 'readwrite');
+                    const homeworkStore = homeworkTx.objectStore('homework');
+                    const homeworkIndex = homeworkStore.index('by-user');
+                    const homeworkRequest = homeworkIndex.openCursor(currentUser);
+                    
+                    homeworkRequest.onsuccess = function(event) {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            cursor.delete();
+                            cursor.continue();
+                        }
+                    };
+                    
+                    // 删除配置数据
+                    const configTx = db.transaction('config', 'readwrite');
+                    const configStore = configTx.objectStore('config');
+                    const configIndex = configStore.index('by-user');
+                    const configRequest = configIndex.openCursor(currentUser);
+                    
+                    configRequest.onsuccess = function(event) {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            cursor.delete();
+                            cursor.continue();
+                        }
+                    };
+                    
+                    // 等待所有删除操作完成
+                    await Promise.all([
+                        new Promise(resolve => scheduleTx.oncomplete = resolve),
+                        new Promise(resolve => homeworkTx.oncomplete = resolve),
+                        new Promise(resolve => configTx.oncomplete = resolve)
+                    ]);
+                }
+                
+                // 3. 清除当前用户状态并跳转到登录界面
+                currentUser = null;
+                localStorage.removeItem('slss-current-user');
+                
+                // 关闭配置模态框
+                closeConfigModal();
+                
+                // 显示登录模态框
+                showLoginModal();
+                
+                alert(`账号 "${currentUser}" 已成功删除！`);
+            } catch (error) {
+                console.error('删除账号失败:', error);
+                alert('删除账号失败：' + error.message);
+            }
+        }
+        
+        // 创建并显示登录模态框
+        function createLoginModal() {
+            // 检查模态框是否已存在
+            if (document.getElementById('login-modal')) return;
+            
+            const modal = document.createElement('div');
+            modal.id = 'login-modal';
+            modal.className = 'fixed inset-0 bg-black/70 z-50 flex items-center justify-center';
+            modal.innerHTML = `
+                <div class="glass-effect p-8 rounded-2xl w-full max-w-md">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-dark">账号登录</h2>
+                        <div class="w-10 h-10 rounded-full overflow-hidden">
+                            <img src="bjbz.png" alt="Logo" class="w-full h-full object-contain">
+                        </div>
+                    </div>
+                    
+                    <div id="auth-message" class="mb-4 hidden p-3 rounded-lg"></div>
+                    
+                    <form id="auth-form" class="space-y-4">
+                        <div>
+                            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                            <input type="text" id="username" name="username" required
+                                class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                        </div>
+                        
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                            <input type="password" id="password" name="password" required
+                                class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="remember-me" name="remember-me"
+                                class="rounded text-primary focus:ring-primary/50">
+                            <label for="remember-me" class="text-sm text-gray-600">记住我</label>
+                        </div>
+                        
+                        <button type="submit" id="login-btn" class="w-full gradient-border bg-primary hover:bg-primary/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg">
+                            登录
+                        </button>
+                    </form>
+                    
+                    <div class="mt-4 flex justify-between items-center text-sm">
+                        <button id="create-account-btn" class="text-primary hover:text-primary/80 transition-colors">
+                            创建账号
+                        </button>
+                        <button id="forgot-password-btn" class="text-gray-600 hover:text-gray-800 transition-colors">
+                            忘记密码？
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-gray-200">
+                        <button id="skip-login-btn" class="w-full text-gray-600 hover:text-gray-800 transition-colors py-2">
+                            跳过登录，以访客身份继续
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // 绑定事件
+            const authForm = document.getElementById('auth-form');
+            const createAccountBtn = document.getElementById('create-account-btn');
+            const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+            const modalDiv = document.getElementById('login-modal');
+            
+            // 登录处理
+            authForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('remember-me').checked;
+                
+                // 显示加载状态
+                const loginBtn = document.getElementById('login-btn');
+                const originalText = loginBtn.innerHTML;
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 处理中...';
+                
+                try {
+                    // 判断是登录还是注册
+                    if (createAccountBtn.textContent === '已有账号？') {
+                        // 注册模式
+                        const result = await createUser(username, password);
+                        showAuthMessage(result.message, result.success ? 'success' : 'error');
+                        
+                        if (result.success) {
+                            // 注册成功后切换到登录模式
+                            setTimeout(() => {
+                                document.querySelector('h2').textContent = '账号登录';
+                                loginBtn.textContent = '登录';
+                                createAccountBtn.textContent = '创建账号';
+                                document.getElementById('auth-message').classList.add('hidden');
+                            }, 1500);
+                        }
+                    } else {
+                        // 登录模式
+                        const result = await loginUser(username, password);
+                        showAuthMessage(result.message, result.success ? 'success' : 'error');
+                        
+                        if (result.success) {
+                            // 登录成功，隐藏模态框
+                            setTimeout(() => {
+                                modalDiv.style.display = 'none';
+                                // 显示主内容
+                                document.querySelector('.container').style.display = '';
+                                // 添加用户信息到页面
+                                updateUserInfo();
+                            }, 1000);
+                        }
+                    }
+                } catch (error) {
+                    console.error('认证错误:', error);
+                    showAuthMessage('发生错误，请重试', 'error');
+                } finally {
+                    // 恢复按钮状态
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = originalText;
+                }
+            });
+            
+            // 切换到注册模式
+            createAccountBtn.addEventListener('click', () => {
+                const isRegisterMode = createAccountBtn.textContent === '已有账号？';
+                if (isRegisterMode) {
+                    // 切换回登录模式
+                    document.querySelector('h2').textContent = '账号登录';
+                    document.getElementById('login-btn').textContent = '登录';
+                    createAccountBtn.textContent = '创建账号';
+                } else {
+                    // 切换到注册模式
+                    document.querySelector('h2').textContent = '创建账号';
+                    document.getElementById('login-btn').textContent = '注册';
+                    createAccountBtn.textContent = '已有账号？';
+                }
+                document.getElementById('auth-message').classList.add('hidden');
+            });
+            
+            // 忘记密码功能（简单提示）
+            forgotPasswordBtn.addEventListener('click', () => {
+                showAuthMessage('此应用不支持密码重置。请联系管理员或重新创建账号。', 'info');
+            });
+            
+            // 跳过登录功能
+            const skipLoginBtn = document.getElementById('skip-login-btn');
+            skipLoginBtn.addEventListener('click', () => {
+                // 设置为访客用户
+                currentUser = 'guest';
+                localStorage.setItem('slss-current-user', 'guest');
+                
+                // 隐藏模态框并显示主内容
+                modalDiv.style.display = 'none';
+                document.querySelector('.container').style.display = '';
+                
+                // 不要在这里直接调用initializeApp()，避免重复调用
+                // 让DOMContentLoaded事件监听器中的checkLoginStatus处理初始化
+                // 只更新用户信息
+                updateUserInfo();
+            });
+        }
+        
+        // 显示登录模态框
+        function showLoginModal() {
+            // 隐藏主内容
+            document.querySelector('.container').style.display = 'none';
+            
+            // 创建并显示模态框
+            createLoginModal();
+            document.getElementById('login-modal').style.display = 'flex';
+            
+            // 清空表单
+            document.getElementById('auth-form').reset();
+            document.querySelector('h2').textContent = '账号登录';
+            document.getElementById('login-btn').textContent = '登录';
+            document.getElementById('create-account-btn').textContent = '创建账号';
+            document.getElementById('auth-message').classList.add('hidden');
+        }
+        
+        // 显示认证消息
+        function showAuthMessage(message, type) {
+            const messageDiv = document.getElementById('auth-message');
+            messageDiv.textContent = message;
+            messageDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
+            
+            if (type === 'success') {
+                messageDiv.classList.add('bg-green-100', 'text-green-800');
+            } else if (type === 'error') {
+                messageDiv.classList.add('bg-red-100', 'text-red-800');
+            } else if (type === 'info') {
+                messageDiv.classList.add('bg-blue-100', 'text-blue-800');
+            }
+        }
+        
+        // 更新用户信息显示
+        function updateUserInfo() {
+            // 检查是否已有用户信息区域
+            let userInfo = document.getElementById('user-info');
+            if (!userInfo) {
+                userInfo = document.createElement('div');
+                userInfo.id = 'user-info';
+                userInfo.className = 'flex items-center gap-3';
+                
+                // 添加到头部
+                const header = document.querySelector('header');
+                header.appendChild(userInfo);
+            }
+            
+            // 判断是否为访客用户
+            const isGuest = currentUser === 'guest';
+            
+            // 设置用户信息
+            userInfo.innerHTML = `
+                <div class="glass-effect rounded-full w-10 h-10 flex items-center justify-center">
+                    <span class="text-primary font-semibold">${currentUser.charAt(0).toUpperCase()}</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-700">${isGuest ? '访客' : currentUser}</p>
+                    ${isGuest ? '<p class="text-xs text-gray-500">访客模式，数据不会保存</p>' : ''}
+                </div>
+                <button id="logout-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                    <i class="fa fa-sign-out text-gray-600"></i>
+                </button>
+            `;
+            
+            // 绑定登出事件（访客和非访客都需要）
+            document.getElementById('logout-btn').addEventListener('click', logoutUser);
+        }
+        
         // IndexedDB 数据库
         const DB_NAME = 'slss-database';
-        const DB_VERSION = 3; // 更新版本号以支持年级关联学科功能
+        const DB_VERSION = 4; // 更新版本号以支持用户隔离功能
         let db = null;
         
         // 初始化 IndexedDB
@@ -328,7 +723,14 @@ Licensed under the MIT License
                         
                         // 创建或更新课程表数据存储
                         if (!db.objectStoreNames.contains('schedule')) {
-                            db.createObjectStore('schedule', { keyPath: 'day' });
+                            const scheduleStore = db.createObjectStore('schedule', { keyPath: 'key' });
+                            scheduleStore.createIndex('by-user', 'user', { unique: false });
+                        } else {
+                            // 如果已存在，检查并添加用户索引
+                            const scheduleStore = event.target.transaction.objectStore('schedule');
+                            if (!scheduleStore.indexNames.contains('by-user')) {
+                                scheduleStore.createIndex('by-user', 'user', { unique: false });
+                            }
                         }
                         
                         // 创建或更新作业记录数据存储
@@ -340,30 +742,25 @@ Licensed under the MIT License
                             if (!homeworkStore.indexNames.contains('by-subject')) {
                                 homeworkStore.createIndex('by-subject', 'subject', { unique: false });
                             }
+                            homeworkStore.createIndex('by-user', 'user', { unique: false });
+                        } else {
+                            // 如果已存在，检查并添加用户索引
+                            const homeworkStore = event.target.transaction.objectStore('homework');
+                            if (!homeworkStore.indexNames.contains('by-user')) {
+                                homeworkStore.createIndex('by-user', 'user', { unique: false });
+                            }
                         }
                         
                         // 创建或更新配置存储
                         if (!db.objectStoreNames.contains('config')) {
                             const configStore = db.createObjectStore('config', { keyPath: 'id' });
-                            // 存储默认配置
-                            configStore.put({ 
-                                id: 'class-config', 
-                                data: {
-                                    minStudentId: 1,
-                                    maxStudentId: 50,
-                                    excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29],
-                                    subjects: ["语文", "数学", "英语", "历史", "地理", "政治"],
-                                    gradeSubjects: {
-                                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
-                                    },
-                                    classInfo: {
-                                        name: "初一二班",
-                                        grade: "初一"
-                                    }
-                                }
-                            });
+                            configStore.createIndex('by-user', 'user', { unique: false });
+                        } else {
+                            // 如果已存在，检查并添加用户索引
+                            const configStore = event.target.transaction.objectStore('config');
+                            if (!configStore.indexNames.contains('by-user')) {
+                                configStore.createIndex('by-user', 'user', { unique: false });
+                            }
                         }
                     };
                 } catch (error) {
@@ -375,11 +772,16 @@ Licensed under the MIT License
         
         // 保存班级配置
         function saveClassConfig() {
-            if (!db) return;
+            if (!db || !currentUser) return;
             
             const transaction = db.transaction(['config'], 'readwrite');
             const store = transaction.objectStore('config');
-            store.put({ id: 'class-config', data: classConfig });
+            const configId = getUserDataKey('class-config');
+            store.put({ 
+                id: configId, 
+                user: currentUser,
+                data: classConfig 
+            });
             
             transaction.oncomplete = () => {
                 console.log('班级配置保存成功');
@@ -389,14 +791,76 @@ Licensed under the MIT License
         // 加载班级配置
         function loadClassConfig() {
             return new Promise((resolve) => {
-                // 确保gradeSubjects配置始终存在
-                if (!classConfig.gradeSubjects) {
-                    classConfig.gradeSubjects = {
-                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
-                    };
+                // 如果没有用户登录，返回默认配置
+                if (!currentUser) {
+                    // 确保gradeSubjects配置始终存在
+                    if (!classConfig.gradeSubjects) {
+                        classConfig.gradeSubjects = {
+                            "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                            "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                            "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                        };
+                    }
+                    resolve();
+                    return;
                 }
+                
+                if (!db) {
+                    // 即使没有数据库，也确保gradeSubjects配置存在
+                    if (!classConfig.gradeSubjects) {
+                        classConfig.gradeSubjects = {
+                            "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                            "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                            "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                        };
+                    }
+                    resolve();
+                    return;
+                }
+                
+                const transaction = db.transaction(['config'], 'readonly');
+                const store = transaction.objectStore('config');
+                const index = store.index('by-user');
+                const request = index.get(currentUser);
+                
+                request.onsuccess = () => {
+                    const configData = request.result;
+                    if (configData && configData.data) {
+                        // 合并配置，保留gradeSubjects结构
+                        Object.assign(classConfig, configData.data);
+                        // 确保gradeSubjects配置始终存在
+                        if (!classConfig.gradeSubjects) {
+                            classConfig.gradeSubjects = {
+                                "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                            };
+                        }
+                    } else {
+                        // 如果没有找到用户配置，使用默认配置
+                        if (!classConfig.gradeSubjects) {
+                            classConfig.gradeSubjects = {
+                                "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                            };
+                        }
+                    }
+                    resolve();
+                };
+                
+                request.onerror = () => {
+                    console.error('加载班级配置失败:', request.error);
+                    // 即使加载失败，也确保gradeSubjects配置存在
+                    if (!classConfig.gradeSubjects) {
+                        classConfig.gradeSubjects = {
+                            "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                            "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                            "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                        };
+                    }
+                    resolve();
+                };
                 
                 try {
                     if (!db) {
@@ -612,6 +1076,25 @@ Licensed under the MIT License
 
                         
                         <div>
+                            <h3 class="font-medium text-dark mb-3">自定义Logo</h3>
+                            <div class="flex flex-col items-center">
+                                <div id="logo-preview" class="w-24 h-24 mb-3 rounded-lg overflow-hidden glass-effect flex items-center justify-center">
+                                    <img id="logo-preview-img" src="${classConfig.logo || 'bjbz.png'}" alt="Logo预览" class="max-w-full max-h-full object-contain">
+                                </div>
+                                <div class="w-full max-w-xs">
+                                    <label for="logo-upload" class="block text-center w-full px-4 py-3 gradient-border bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 hover:shadow-lg cursor-pointer">
+                                        <i class="fa fa-upload mr-2"></i>上传Logo
+                                    </label>
+                                    <input type="file" id="logo-upload" accept="image/*" class="hidden">
+                                    <p class="text-center text-sm text-gray-500 mt-2">支持JPG、PNG、WEBP等图片格式</p>
+                                    <button id="remove-logo" class="mt-2 w-full text-sm text-gray-500 hover:text-danger transition-colors">
+                                        <i class="fa fa-trash mr-1"></i>移除Logo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
                             <h3 class="font-medium text-dark mb-3">数据管理</h3>
                             <div class="space-y-3">
                                 <button id="export-all-data" class="w-full gradient-border bg-primary hover:bg-primary/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2">
@@ -621,6 +1104,10 @@ Licensed under the MIT License
                                 <button id="reset-all-data" class="w-full gradient-border bg-danger hover:bg-danger/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2">
                                     <i class="fa fa-refresh"></i>
                                     <span>重置所有数据</span>
+                                </button>
+                                <button id="delete-account" class="w-full gradient-border bg-danger hover:bg-danger/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fa fa-user-times"></i>
+                                    <span>清除账号</span>
                                 </button>
                             </div>
                         </div>
@@ -639,6 +1126,25 @@ Licensed under the MIT License
             document.getElementById('save-config').addEventListener('click', saveConfigChanges);
             document.getElementById('export-all-data').addEventListener('click', exportAllData);
             document.getElementById('reset-all-data').addEventListener('click', resetAllData);
+            document.getElementById('delete-account').addEventListener('click', deleteAccount);
+            
+            // Logo上传事件
+            document.getElementById('logo-upload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('logo-preview-img').src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // 移除Logo事件
+            document.getElementById('remove-logo').addEventListener('click', function() {
+                document.getElementById('logo-preview-img').src = 'bjbz.png';
+                document.getElementById('logo-upload').value = '';
+            });
         }
         
         // 打开配置模态框
@@ -678,6 +1184,11 @@ Licensed under the MIT License
                 const excludedIdsStr = document.getElementById('config-excluded-ids').value;
                 classConfig.excludedIds = excludedIdsStr ? excludedIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
                 
+                // 处理Logo
+                const logoSrc = document.getElementById('logo-preview-img').src;
+                // 只保存非默认logo
+                classConfig.logo = logoSrc !== 'bjbz.png' && logoSrc !== window.location.origin + '/bjbz.png' ? logoSrc : null;
+                
                 // 验证配置
                 if (classConfig.minStudentId > classConfig.maxStudentId) {
                     alert('最小学号不能大于最大学号！');
@@ -691,6 +1202,12 @@ Licensed under the MIT License
                 generateSubjectSelect();
                 generateStudentNumberButtons();
                 document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
+                
+                // 更新header中的logo
+                const headerLogo = document.querySelector('header img.logo');
+                if (headerLogo) {
+                    headerLogo.src = classConfig.logo || 'bjbz.png';
+                }
                 
                 closeConfigModal();
                 alert('配置保存成功！');
@@ -721,7 +1238,12 @@ Licensed under the MIT License
         
         // 重置所有数据
         function resetAllData() {
-            if (!confirm('确定要重置所有数据吗？此操作不可撤销！')) {
+            if (!currentUser) {
+                alert('请先登录');
+                return;
+            }
+            
+            if (!confirm(`确定要重置用户 ${currentUser} 的所有数据吗？此操作不可撤销！`)) {
                 return;
             }
             
@@ -743,23 +1265,45 @@ Licensed under the MIT License
             displayHomeworkRecords();
             updateSelectedNumbersDisplay();
             
-            // 保存到数据库
+            // 保存到数据库（saveScheduleData和saveHomeworkRecords函数已经实现了用户隔离）
             saveScheduleData();
             saveHomeworkRecords();
             
-            alert('所有数据已重置！');
+            alert(`用户 ${currentUser} 的数据已重置！`);
         }
         
-        // 保存课程表数据到 IndexedDB
+        // 获取带用户标识的数据键名
+        function getUserDataKey(baseKey) {
+            return currentUser ? `${currentUser}_${baseKey}` : baseKey;
+        }
+        
+        // 保存课程表数据到 IndexedDB（用户隔离）
         function saveScheduleData() {
-            if (!db) return;
+            // 访客模式下不保存数据
+            if (currentUser === 'guest') return;
+            
+            if (!db || !currentUser) return;
             
             const transaction = db.transaction(['schedule'], 'readwrite');
             const store = transaction.objectStore('schedule');
             
-            Object.keys(scheduleData).forEach(day => {
-                store.put({ day: day, courses: scheduleData[day] });
-            });
+            // 首先删除当前用户的旧数据
+            const deleteRequest = store.getAll(IDBKeyRange.only(currentUser));
+            deleteRequest.onsuccess = () => {
+                deleteRequest.result.forEach(item => {
+                    store.delete(item.id);
+                });
+                
+                // 然后保存新数据
+                Object.keys(scheduleData).forEach(day => {
+                    store.put({
+                        id: `${currentUser}_${day}`,
+                        user: currentUser,
+                        day: day,
+                        courses: scheduleData[day]
+                    });
+                });
+            };
             
             transaction.oncomplete = () => {
                 console.log('课程表数据保存成功');
@@ -770,21 +1314,30 @@ Licensed under the MIT License
             };
         }
         
-        // 从 IndexedDB 加载课程表数据
+        // 从 IndexedDB 加载课程表数据（用户隔离）
         function loadScheduleData() {
             return new Promise((resolve, reject) => {
-                if (!db) {
+                if (!db || !currentUser) {
                     resolve(scheduleData);
                     return;
                 }
                 
                 const transaction = db.transaction(['schedule'], 'readonly');
                 const store = transaction.objectStore('schedule');
-                const allRequest = store.getAll();
                 
-                allRequest.onsuccess = () => {
-                    const data = allRequest.result;
+                // 创建索引查询，获取当前用户的所有数据
+                const index = store.index('by_user');
+                const request = index.getAll(currentUser);
+                
+                request.onsuccess = () => {
+                    const data = request.result;
                     if (data.length > 0) {
+                        // 清空现有数据
+                        Object.keys(scheduleData).forEach(day => {
+                            scheduleData[day] = Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' }));
+                        });
+                        
+                        // 填充用户数据
                         data.forEach(item => {
                             if (scheduleData.hasOwnProperty(item.day)) {
                                 scheduleData[item.day] = item.courses || [];
@@ -794,21 +1347,26 @@ Licensed under the MIT License
                     resolve(scheduleData);
                 };
                 
-                allRequest.onerror = () => {
+                request.onerror = () => {
                     console.error('加载课程表数据失败');
                     resolve(scheduleData);
                 };
             });
         }
         
-        // 保存作业记录到 IndexedDB
+        // 保存作业记录到 IndexedDB（用户隔离）
         function saveHomeworkRecords() {
-            if (!db) return;
+            // 访客模式下不保存数据
+            if (currentUser === 'guest') return;
+            
+            if (!db || !currentUser) return;
             
             const transaction = db.transaction(['homework'], 'readwrite');
             const store = transaction.objectStore('homework');
             
+            // 添加用户标识并保存
             homeworkRecords.forEach(record => {
+                record.user = currentUser;
                 store.put(record);
             });
             
@@ -821,24 +1379,30 @@ Licensed under the MIT License
             };
         }
         
-        // 从 IndexedDB 加载作业记录
+        // 从 IndexedDB 加载作业记录（用户隔离）
         function loadHomeworkRecords() {
             return new Promise((resolve, reject) => {
-                if (!db) {
+                if (!db || !currentUser) {
                     resolve(homeworkRecords);
                     return;
                 }
                 
                 const transaction = db.transaction(['homework'], 'readonly');
                 const store = transaction.objectStore('homework');
-                const allRequest = store.getAll();
+                const index = store.index('by_user');
+                const request = index.getAll(currentUser);
                 
-                allRequest.onsuccess = () => {
-                    homeworkRecords = allRequest.result;
+                request.onsuccess = () => {
+                    // 只加载当前用户的记录
+                    homeworkRecords = request.result.map(record => {
+                        // 移除用户标识，保持数据结构一致
+                        const { user, ...recordWithoutUser } = record;
+                        return recordWithoutUser;
+                    });
                     resolve(homeworkRecords);
                 };
                 
-                allRequest.onerror = () => {
+                request.onerror = () => {
                     console.error('加载作业记录失败');
                     resolve(homeworkRecords);
                 };
@@ -884,6 +1448,20 @@ Licensed under the MIT License
         
         // 初始化页面
         document.addEventListener('DOMContentLoaded', async function() {
+            // 首先检查登录状态
+            const isLoggedIn = checkLoginStatus();
+            
+            if (isLoggedIn) {
+                // 已登录用户或访客，直接初始化应用
+                initializeApp();
+            } else {
+                // 未登录用户，显示登录模态框
+                showLoginModal();
+            }
+        });
+        
+        // 初始化应用功能
+        async function initializeApp() {
             // 显示加载动画
             showLoader();
             
@@ -918,8 +1496,10 @@ Licensed under the MIT License
                     try { await loadClassConfig(); } catch (e) { console.error('加载班级配置失败:', e); }
                 } catch (error) {
                     console.error('数据库初始化失败:', error);
-                    // 即使数据库失败，也继续初始化应用
                 }
+                
+                // 添加用户信息到页面
+                updateUserInfo();
                 
                 // 更新加载状态
                 updateLoaderText('生成界面元素...');
@@ -942,6 +1522,12 @@ Licensed under the MIT License
                 // 添加配置按钮和导入功能
                 addConfigAndImportFeatures();
                 
+                // 初始化logo显示
+                const headerLogo = document.querySelector('header img.logo');
+                if (headerLogo && classConfig.logo) {
+                    headerLogo.src = classConfig.logo;
+                }
+                
                 // 注册Service Worker
                 if ('serviceWorker' in navigator) {
                     window.addEventListener('load', () => {
@@ -954,6 +1540,15 @@ Licensed under the MIT License
                             });
                     });
                 }
+                
+                // 显示欢迎消息
+                setTimeout(() => {
+                    if (currentUser === 'guest') {
+                        showNotification('欢迎使用访客模式！', 'info');
+                    } else {
+                        showNotification(`欢迎回来，${currentUser}！`, 'success');
+                    }
+                }, 1000);
             } catch (error) {
                 console.error('初始化失败:', error);
             } finally {
@@ -962,7 +1557,7 @@ Licensed under the MIT License
                     hideLoader();
                 }, 500); // 短暂延迟，确保用户能看到加载过程
             }
-        });
+        }
         
         // 更新当前日期
         function updateCurrentDate() {
