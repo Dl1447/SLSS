@@ -155,7 +155,7 @@ Licensed under the MIT License
                 </div>
                 <div>
                     <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-gradient mb-2 animate-pulse-slow">初一二班学情统计</h1>
-                    <p class="text-gray-600"></p>
+                    <p id="class-motto" class="text-accent italic"></p>
                 </div>
             </div>
         </header>
@@ -229,9 +229,9 @@ Licensed under the MIT License
                         </h3>
                         
                         
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-700 mb-3">选择星期</label>
-                            <div class="flex flex-wrap gap-3">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">选择星期</label>
+                            <div class="flex flex-wrap gap-2">
                                 <button class="day-btn gradient-border bg-primary text-white px-5 py-3 rounded-xl transition-all duration-300 hover:shadow-lg" data-day="周一">周一</button>
                                 <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周二">周二</button>
                                 <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周三">周三</button>
@@ -241,7 +241,7 @@ Licensed under the MIT License
                         </div>
                         
                         
-                        <div class="mb-6">
+                        <div class="mb-4">
                             <button id="add-new-course" class="gradient-border bg-secondary hover:bg-secondary/90 text-white px-5 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2">
                                 <i class="fa fa-plus"></i>
                                 <span>添加新课</span>
@@ -249,7 +249,7 @@ Licensed under the MIT License
                         </div>
                         
                         
-                        <div id="schedule-container" class="space-y-4 max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-hide pb-4">
+                        <div id="schedule-container" class="space-y-3 max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-hide pb-2">
                             
                         </div>
                     </div>
@@ -264,20 +264,17 @@ Licensed under the MIT License
     </div>
 
     <script>
-        // 简易账号系统 - 基于 localStorage
-        let currentUser = null;
-        
         // 初始化变量
         let currentDay = "周一";
         let selectedStudentNumbers = [];
         let scheduleData = {
-            "周一": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-            "周二": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-            "周三": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-            "周四": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-            "周五": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-            "周六": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-            "周日": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' }))
+            "周一": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+            "周二": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+            "周三": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+            "周四": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+            "周五": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+            "周六": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+            "周日": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] }))
         };
         let homeworkRecords = [];
         
@@ -285,7 +282,7 @@ Licensed under the MIT License
         let classConfig = {
             minStudentId: 1,
             maxStudentId: 50,
-            excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29], // 排除的学号
+            excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29,30], // 排除的学号
             subjects: ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治"],
             gradeSubjects: {
                 "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
@@ -294,405 +291,14 @@ Licensed under the MIT License
             },
             classInfo: {
                 name: "初一二班",
-                grade: "初一"
+                grade: "初一",
+                motto: "团结拼搏，追求卓越"
             }
         };
         
-        // 密码哈希函数 - 使用简单的SHA-256实现
-        async function hashPassword(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-        
-        // 创建用户
-        async function createUser(username, password) {
-            // 检查用户是否已存在
-            const users = JSON.parse(localStorage.getItem('slss-users') || '{}');
-            if (users[username]) {
-                return { success: false, message: '用户名已存在' };
-            }
-            
-            // 哈希密码
-            const hashedPassword = await hashPassword(password);
-            
-            // 保存用户信息
-            users[username] = {
-                password: hashedPassword,
-                createdAt: new Date().toISOString()
-            };
-            
-            localStorage.setItem('slss-users', JSON.stringify(users));
-            return { success: true, message: '用户创建成功' };
-        }
-        
-        // 用户登录
-        async function loginUser(username, password) {
-            const users = JSON.parse(localStorage.getItem('slss-users') || '{}');
-            const user = users[username];
-            
-            if (!user) {
-                return { success: false, message: '用户名或密码错误' };
-            }
-            
-            // 哈希输入的密码并与存储的哈希进行比较
-            const hashedPassword = await hashPassword(password);
-            if (hashedPassword === user.password) {
-                // 登录成功
-                currentUser = username;
-                localStorage.setItem('slss-current-user', username);
-                
-                // 添加登录时间
-                user.lastLogin = new Date().toISOString();
-                users[username] = user;
-                localStorage.setItem('slss-users', JSON.stringify(users));
-                
-                return { success: true, message: '登录成功' };
-            } else {
-                return { success: false, message: '用户名或密码错误' };
-            }
-        }
-        
-        // 检查用户是否已登录或为访客
-        function checkLoginStatus() {
-            const savedUser = localStorage.getItem('slss-current-user');
-            if (savedUser) {
-                currentUser = savedUser;
-                return true;
-            }
-            return false;
-        }
-        
-        // 用户登出
-        function logoutUser() {
-            currentUser = null;
-            localStorage.removeItem('slss-current-user');
-            showLoginModal();
-        }
-        
-        // 清除账号
-        async function deleteAccount() {
-            // 访客模式不允许清除账号
-            if (currentUser === 'guest') {
-                alert('访客模式不需要清除账号，请直接退出登录！');
-                return;
-            }
-            
-            // 二次确认
-            if (!confirm(`确定要永久删除账号 "${currentUser}" 吗？此操作将删除所有相关数据且无法恢复！`)) {
-                return;
-            }
-            
-            try {
-                // 1. 从 localStorage 中删除用户信息
-                const users = JSON.parse(localStorage.getItem('slss-users') || '{}');
-                delete users[currentUser];
-                localStorage.setItem('slss-users', JSON.stringify(users));
-                
-                // 2. 从 IndexedDB 中删除该用户的所有数据
-                if (db) {
-                    // 删除课程表数据
-                    const scheduleTx = db.transaction('schedule', 'readwrite');
-                    const scheduleStore = scheduleTx.objectStore('schedule');
-                    const scheduleIndex = scheduleStore.index('by-user');
-                    const scheduleRequest = scheduleIndex.openCursor(currentUser);
-                    
-                    scheduleRequest.onsuccess = function(event) {
-                        const cursor = event.target.result;
-                        if (cursor) {
-                            cursor.delete();
-                            cursor.continue();
-                        }
-                    };
-                    
-                    // 删除作业记录
-                    const homeworkTx = db.transaction('homework', 'readwrite');
-                    const homeworkStore = homeworkTx.objectStore('homework');
-                    const homeworkIndex = homeworkStore.index('by-user');
-                    const homeworkRequest = homeworkIndex.openCursor(currentUser);
-                    
-                    homeworkRequest.onsuccess = function(event) {
-                        const cursor = event.target.result;
-                        if (cursor) {
-                            cursor.delete();
-                            cursor.continue();
-                        }
-                    };
-                    
-                    // 删除配置数据
-                    const configTx = db.transaction('config', 'readwrite');
-                    const configStore = configTx.objectStore('config');
-                    const configIndex = configStore.index('by-user');
-                    const configRequest = configIndex.openCursor(currentUser);
-                    
-                    configRequest.onsuccess = function(event) {
-                        const cursor = event.target.result;
-                        if (cursor) {
-                            cursor.delete();
-                            cursor.continue();
-                        }
-                    };
-                    
-                    // 等待所有删除操作完成
-                    await Promise.all([
-                        new Promise(resolve => scheduleTx.oncomplete = resolve),
-                        new Promise(resolve => homeworkTx.oncomplete = resolve),
-                        new Promise(resolve => configTx.oncomplete = resolve)
-                    ]);
-                }
-                
-                // 3. 清除当前用户状态并跳转到登录界面
-                currentUser = null;
-                localStorage.removeItem('slss-current-user');
-                
-                // 关闭配置模态框
-                closeConfigModal();
-                
-                // 显示登录模态框
-                showLoginModal();
-                
-                alert(`账号 "${currentUser}" 已成功删除！`);
-            } catch (error) {
-                console.error('删除账号失败:', error);
-                alert('删除账号失败：' + error.message);
-            }
-        }
-        
-        // 创建并显示登录模态框
-        function createLoginModal() {
-            // 检查模态框是否已存在
-            if (document.getElementById('login-modal')) return;
-            
-            const modal = document.createElement('div');
-            modal.id = 'login-modal';
-            modal.className = 'fixed inset-0 bg-black/70 z-50 flex items-center justify-center';
-            modal.innerHTML = `
-                <div class="glass-effect p-8 rounded-2xl w-full max-w-md">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-dark">账号登录</h2>
-                        <div class="w-10 h-10 rounded-full overflow-hidden">
-                            <img src="bjbz.png" alt="Logo" class="w-full h-full object-contain">
-                        </div>
-                    </div>
-                    
-                    <div id="auth-message" class="mb-4 hidden p-3 rounded-lg"></div>
-                    
-                    <form id="auth-form" class="space-y-4">
-                        <div>
-                            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
-                            <input type="text" id="username" name="username" required
-                                class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
-                        </div>
-                        
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
-                            <input type="password" id="password" name="password" required
-                                class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
-                        </div>
-                        
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="remember-me" name="remember-me"
-                                class="rounded text-primary focus:ring-primary/50">
-                            <label for="remember-me" class="text-sm text-gray-600">记住我</label>
-                        </div>
-                        
-                        <button type="submit" id="login-btn" class="w-full gradient-border bg-primary hover:bg-primary/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg">
-                            登录
-                        </button>
-                    </form>
-                    
-                    <div class="mt-4 flex justify-between items-center text-sm">
-                        <button id="create-account-btn" class="text-primary hover:text-primary/80 transition-colors">
-                            创建账号
-                        </button>
-                        <button id="forgot-password-btn" class="text-gray-600 hover:text-gray-800 transition-colors">
-                            忘记密码？
-                        </button>
-                    </div>
-                    
-                    <div class="mt-6 pt-4 border-t border-gray-200">
-                        <button id="skip-login-btn" class="w-full text-gray-600 hover:text-gray-800 transition-colors py-2">
-                            跳过登录，以访客身份继续
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // 绑定事件
-            const authForm = document.getElementById('auth-form');
-            const createAccountBtn = document.getElementById('create-account-btn');
-            const forgotPasswordBtn = document.getElementById('forgot-password-btn');
-            const modalDiv = document.getElementById('login-modal');
-            
-            // 登录处理
-            authForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                const rememberMe = document.getElementById('remember-me').checked;
-                
-                // 显示加载状态
-                const loginBtn = document.getElementById('login-btn');
-                const originalText = loginBtn.innerHTML;
-                loginBtn.disabled = true;
-                loginBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> 处理中...';
-                
-                try {
-                    // 判断是登录还是注册
-                    if (createAccountBtn.textContent === '已有账号？') {
-                        // 注册模式
-                        const result = await createUser(username, password);
-                        showAuthMessage(result.message, result.success ? 'success' : 'error');
-                        
-                        if (result.success) {
-                            // 注册成功后切换到登录模式
-                            setTimeout(() => {
-                                document.querySelector('h2').textContent = '账号登录';
-                                loginBtn.textContent = '登录';
-                                createAccountBtn.textContent = '创建账号';
-                                document.getElementById('auth-message').classList.add('hidden');
-                            }, 1500);
-                        }
-                    } else {
-                        // 登录模式
-                        const result = await loginUser(username, password);
-                        showAuthMessage(result.message, result.success ? 'success' : 'error');
-                        
-                        if (result.success) {
-                            // 登录成功，隐藏模态框
-                            setTimeout(() => {
-                                modalDiv.style.display = 'none';
-                                // 显示主内容
-                                document.querySelector('.container').style.display = '';
-                                // 添加用户信息到页面
-                                updateUserInfo();
-                            }, 1000);
-                        }
-                    }
-                } catch (error) {
-                    console.error('认证错误:', error);
-                    showAuthMessage('发生错误，请重试', 'error');
-                } finally {
-                    // 恢复按钮状态
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = originalText;
-                }
-            });
-            
-            // 切换到注册模式
-            createAccountBtn.addEventListener('click', () => {
-                const isRegisterMode = createAccountBtn.textContent === '已有账号？';
-                if (isRegisterMode) {
-                    // 切换回登录模式
-                    document.querySelector('h2').textContent = '账号登录';
-                    document.getElementById('login-btn').textContent = '登录';
-                    createAccountBtn.textContent = '创建账号';
-                } else {
-                    // 切换到注册模式
-                    document.querySelector('h2').textContent = '创建账号';
-                    document.getElementById('login-btn').textContent = '注册';
-                    createAccountBtn.textContent = '已有账号？';
-                }
-                document.getElementById('auth-message').classList.add('hidden');
-            });
-            
-            // 忘记密码功能（简单提示）
-            forgotPasswordBtn.addEventListener('click', () => {
-                showAuthMessage('此应用不支持密码重置。请联系管理员或重新创建账号。', 'info');
-            });
-            
-            // 跳过登录功能
-            const skipLoginBtn = document.getElementById('skip-login-btn');
-            skipLoginBtn.addEventListener('click', () => {
-                // 设置为访客用户
-                currentUser = 'guest';
-                localStorage.setItem('slss-current-user', 'guest');
-                
-                // 隐藏模态框并显示主内容
-                modalDiv.style.display = 'none';
-                document.querySelector('.container').style.display = '';
-                
-                // 不要在这里直接调用initializeApp()，避免重复调用
-                // 让DOMContentLoaded事件监听器中的checkLoginStatus处理初始化
-                // 只更新用户信息
-                updateUserInfo();
-            });
-        }
-        
-        // 显示登录模态框
-        function showLoginModal() {
-            // 隐藏主内容
-            document.querySelector('.container').style.display = 'none';
-            
-            // 创建并显示模态框
-            createLoginModal();
-            document.getElementById('login-modal').style.display = 'flex';
-            
-            // 清空表单
-            document.getElementById('auth-form').reset();
-            document.querySelector('h2').textContent = '账号登录';
-            document.getElementById('login-btn').textContent = '登录';
-            document.getElementById('create-account-btn').textContent = '创建账号';
-            document.getElementById('auth-message').classList.add('hidden');
-        }
-        
-        // 显示认证消息
-        function showAuthMessage(message, type) {
-            const messageDiv = document.getElementById('auth-message');
-            messageDiv.textContent = message;
-            messageDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
-            
-            if (type === 'success') {
-                messageDiv.classList.add('bg-green-100', 'text-green-800');
-            } else if (type === 'error') {
-                messageDiv.classList.add('bg-red-100', 'text-red-800');
-            } else if (type === 'info') {
-                messageDiv.classList.add('bg-blue-100', 'text-blue-800');
-            }
-        }
-        
-        // 更新用户信息显示
-        function updateUserInfo() {
-            // 检查是否已有用户信息区域
-            let userInfo = document.getElementById('user-info');
-            if (!userInfo) {
-                userInfo = document.createElement('div');
-                userInfo.id = 'user-info';
-                userInfo.className = 'flex items-center gap-3';
-                
-                // 添加到头部
-                const header = document.querySelector('header');
-                header.appendChild(userInfo);
-            }
-            
-            // 判断是否为访客用户
-            const isGuest = currentUser === 'guest';
-            
-            // 设置用户信息
-            userInfo.innerHTML = `
-                <div class="glass-effect rounded-full w-10 h-10 flex items-center justify-center">
-                    <span class="text-primary font-semibold">${currentUser.charAt(0).toUpperCase()}</span>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-700">${isGuest ? '访客' : currentUser}</p>
-                    ${isGuest ? '<p class="text-xs text-gray-500">访客模式，数据不会保存</p>' : ''}
-                </div>
-                <button id="logout-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                    <i class="fa fa-sign-out text-gray-600"></i>
-                </button>
-            `;
-            
-            // 绑定登出事件（访客和非访客都需要）
-            document.getElementById('logout-btn').addEventListener('click', logoutUser);
-        }
-        
         // IndexedDB 数据库
         const DB_NAME = 'slss-database';
-        const DB_VERSION = 4; // 更新版本号以支持用户隔离功能
+        const DB_VERSION = 4; // 更新版本号以匹配现有数据库
         let db = null;
         
         // 初始化 IndexedDB
@@ -723,14 +329,7 @@ Licensed under the MIT License
                         
                         // 创建或更新课程表数据存储
                         if (!db.objectStoreNames.contains('schedule')) {
-                            const scheduleStore = db.createObjectStore('schedule', { keyPath: 'key' });
-                            scheduleStore.createIndex('by-user', 'user', { unique: false });
-                        } else {
-                            // 如果已存在，检查并添加用户索引
-                            const scheduleStore = event.target.transaction.objectStore('schedule');
-                            if (!scheduleStore.indexNames.contains('by-user')) {
-                                scheduleStore.createIndex('by-user', 'user', { unique: false });
-                            }
+                            db.createObjectStore('schedule', { keyPath: 'day' });
                         }
                         
                         // 创建或更新作业记录数据存储
@@ -742,25 +341,31 @@ Licensed under the MIT License
                             if (!homeworkStore.indexNames.contains('by-subject')) {
                                 homeworkStore.createIndex('by-subject', 'subject', { unique: false });
                             }
-                            homeworkStore.createIndex('by-user', 'user', { unique: false });
-                        } else {
-                            // 如果已存在，检查并添加用户索引
-                            const homeworkStore = event.target.transaction.objectStore('homework');
-                            if (!homeworkStore.indexNames.contains('by-user')) {
-                                homeworkStore.createIndex('by-user', 'user', { unique: false });
-                            }
                         }
                         
                         // 创建或更新配置存储
                         if (!db.objectStoreNames.contains('config')) {
                             const configStore = db.createObjectStore('config', { keyPath: 'id' });
-                            configStore.createIndex('by-user', 'user', { unique: false });
-                        } else {
-                            // 如果已存在，检查并添加用户索引
-                            const configStore = event.target.transaction.objectStore('config');
-                            if (!configStore.indexNames.contains('by-user')) {
-                                configStore.createIndex('by-user', 'user', { unique: false });
-                            }
+                            // 存储默认配置
+                            configStore.put({ 
+                                id: 'class-config', 
+                                data: {
+                                    minStudentId: 1,
+                                    maxStudentId: 50,
+                                    excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29],
+                                    subjects: ["语文", "数学", "英语", "历史", "地理", "政治"],
+                                    gradeSubjects: {
+                                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                                    },
+                                    classInfo: {
+                                    name: "初一二班",
+                                    grade: "初一",
+                                    motto: "团结拼搏，追求卓越"
+                                }
+                                }
+                            });
                         }
                     };
                 } catch (error) {
@@ -772,16 +377,11 @@ Licensed under the MIT License
         
         // 保存班级配置
         function saveClassConfig() {
-            if (!db || !currentUser) return;
+            if (!db) return;
             
             const transaction = db.transaction(['config'], 'readwrite');
             const store = transaction.objectStore('config');
-            const configId = getUserDataKey('class-config');
-            store.put({ 
-                id: configId, 
-                user: currentUser,
-                data: classConfig 
-            });
+            store.put({ id: 'class-config', data: classConfig });
             
             transaction.oncomplete = () => {
                 console.log('班级配置保存成功');
@@ -791,76 +391,14 @@ Licensed under the MIT License
         // 加载班级配置
         function loadClassConfig() {
             return new Promise((resolve) => {
-                // 如果没有用户登录，返回默认配置
-                if (!currentUser) {
-                    // 确保gradeSubjects配置始终存在
-                    if (!classConfig.gradeSubjects) {
-                        classConfig.gradeSubjects = {
-                            "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                            "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                            "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
-                        };
-                    }
-                    resolve();
-                    return;
+                // 确保gradeSubjects配置始终存在
+                if (!classConfig.gradeSubjects) {
+                    classConfig.gradeSubjects = {
+                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
+                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
+                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                    };
                 }
-                
-                if (!db) {
-                    // 即使没有数据库，也确保gradeSubjects配置存在
-                    if (!classConfig.gradeSubjects) {
-                        classConfig.gradeSubjects = {
-                            "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                            "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                            "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
-                        };
-                    }
-                    resolve();
-                    return;
-                }
-                
-                const transaction = db.transaction(['config'], 'readonly');
-                const store = transaction.objectStore('config');
-                const index = store.index('by-user');
-                const request = index.get(currentUser);
-                
-                request.onsuccess = () => {
-                    const configData = request.result;
-                    if (configData && configData.data) {
-                        // 合并配置，保留gradeSubjects结构
-                        Object.assign(classConfig, configData.data);
-                        // 确保gradeSubjects配置始终存在
-                        if (!classConfig.gradeSubjects) {
-                            classConfig.gradeSubjects = {
-                                "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
-                            };
-                        }
-                    } else {
-                        // 如果没有找到用户配置，使用默认配置
-                        if (!classConfig.gradeSubjects) {
-                            classConfig.gradeSubjects = {
-                                "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
-                            };
-                        }
-                    }
-                    resolve();
-                };
-                
-                request.onerror = () => {
-                    console.error('加载班级配置失败:', request.error);
-                    // 即使加载失败，也确保gradeSubjects配置存在
-                    if (!classConfig.gradeSubjects) {
-                        classConfig.gradeSubjects = {
-                            "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                            "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                            "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
-                        };
-                    }
-                    resolve();
-                };
                 
                 try {
                     if (!db) {
@@ -891,9 +429,10 @@ Licensed under the MIT License
                             // 没有配置数据时，确保学科列表正确
                             ensureSubjectsBasedOnGrade();
                         }
-                        // 更新页面标题
-                        document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
-                        resolve(classConfig);
+                        // 更新页面标题和班训
+                document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
+                updateClassMotto();
+                resolve(classConfig);
                     };
                     
                     request.onerror = () => {
@@ -1052,6 +591,10 @@ Licensed under the MIT License
                                     </select>
                                 </div>
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">班训</label>
+                                <input id="config-class-motto" type="text" value="${classConfig.classInfo.motto || ''}" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" placeholder="输入班级班训">
+                            </div>
                         </div>
                         
                         <div>
@@ -1076,24 +619,11 @@ Licensed under the MIT License
 
                         
                         <div>
-                            <h3 class="font-medium text-dark mb-3">自定义Logo</h3>
-                            <div class="flex flex-col items-center">
-                                <div id="logo-preview" class="w-24 h-24 mb-3 rounded-lg overflow-hidden glass-effect flex items-center justify-center">
-                                    <img id="logo-preview-img" src="${classConfig.logo || 'bjbz.png'}" alt="Logo预览" class="max-w-full max-h-full object-contain">
-                                </div>
-                                <div class="w-full max-w-xs">
-                                    <label for="logo-upload" class="block text-center w-full px-4 py-3 gradient-border bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 hover:shadow-lg cursor-pointer">
-                                        <i class="fa fa-upload mr-2"></i>上传Logo
-                                    </label>
-                                    <input type="file" id="logo-upload" accept="image/*" class="hidden">
-                                    <p class="text-center text-sm text-gray-500 mt-2">支持JPG、PNG、WEBP等图片格式</p>
-                                    <button id="remove-logo" class="mt-2 w-full text-sm text-gray-500 hover:text-danger transition-colors">
-                                        <i class="fa fa-trash mr-1"></i>移除Logo
-                                    </button>
-                                </div>
-                            </div>
+                            <h3 class="font-medium text-dark mb-3">课程设置</h3>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">每天课程节数</label>
+                            <input id="config-max-sections" type="number" min="1" max="20" value="8" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
                         </div>
-
+                        
                         <div>
                             <h3 class="font-medium text-dark mb-3">数据管理</h3>
                             <div class="space-y-3">
@@ -1104,10 +634,6 @@ Licensed under the MIT License
                                 <button id="reset-all-data" class="w-full gradient-border bg-danger hover:bg-danger/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2">
                                     <i class="fa fa-refresh"></i>
                                     <span>重置所有数据</span>
-                                </button>
-                                <button id="delete-account" class="w-full gradient-border bg-danger hover:bg-danger/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2">
-                                    <i class="fa fa-user-times"></i>
-                                    <span>清除账号</span>
                                 </button>
                             </div>
                         </div>
@@ -1126,25 +652,6 @@ Licensed under the MIT License
             document.getElementById('save-config').addEventListener('click', saveConfigChanges);
             document.getElementById('export-all-data').addEventListener('click', exportAllData);
             document.getElementById('reset-all-data').addEventListener('click', resetAllData);
-            document.getElementById('delete-account').addEventListener('click', deleteAccount);
-            
-            // Logo上传事件
-            document.getElementById('logo-upload').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        document.getElementById('logo-preview-img').src = event.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            
-            // 移除Logo事件
-            document.getElementById('remove-logo').addEventListener('click', function() {
-                document.getElementById('logo-preview-img').src = 'bjbz.png';
-                document.getElementById('logo-upload').value = '';
-            });
         }
         
         // 打开配置模态框
@@ -1165,6 +672,7 @@ Licensed under the MIT License
         function saveConfigChanges() {
             try {
                 classConfig.classInfo.name = document.getElementById('config-class-name').value || '班级';
+                classConfig.classInfo.motto = document.getElementById('config-class-motto').value || '';
                 const selectedGrade = document.getElementById('config-grade').value;
                 
                 // 如果选择了预设年级，自动关联对应学科
@@ -1179,15 +687,17 @@ Licensed under the MIT License
                 
                 classConfig.minStudentId = parseInt(document.getElementById('config-min-id').value) || 1;
                 classConfig.maxStudentId = parseInt(document.getElementById('config-max-id').value) || 50;
+                classConfig.maxClassSections = parseInt(document.getElementById('config-max-sections').value) || 8;
                 
                 // 解析排除的学号
                 const excludedIdsStr = document.getElementById('config-excluded-ids').value;
                 classConfig.excludedIds = excludedIdsStr ? excludedIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
                 
-                // 处理Logo
-                const logoSrc = document.getElementById('logo-preview-img').src;
-                // 只保存非默认logo
-                classConfig.logo = logoSrc !== 'bjbz.png' && logoSrc !== window.location.origin + '/bjbz.png' ? logoSrc : null;
+                // 验证课程节数
+                if (classConfig.maxClassSections < 1 || classConfig.maxClassSections > 20) {
+                    alert('课程节数必须在1-20之间！');
+                    return;
+                }
                 
                 // 验证配置
                 if (classConfig.minStudentId > classConfig.maxStudentId) {
@@ -1202,12 +712,7 @@ Licensed under the MIT License
                 generateSubjectSelect();
                 generateStudentNumberButtons();
                 document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
-                
-                // 更新header中的logo
-                const headerLogo = document.querySelector('header img.logo');
-                if (headerLogo) {
-                    headerLogo.src = classConfig.logo || 'bjbz.png';
-                }
+                updateClassMotto();
                 
                 closeConfigModal();
                 alert('配置保存成功！');
@@ -1238,24 +743,20 @@ Licensed under the MIT License
         
         // 重置所有数据
         function resetAllData() {
-            if (!currentUser) {
-                alert('请先登录');
-                return;
-            }
-            
-            if (!confirm(`确定要重置用户 ${currentUser} 的所有数据吗？此操作不可撤销！`)) {
+            if (!confirm('确定要重置所有数据吗？此操作不可撤销！')) {
                 return;
             }
             
             // 重置数据
+            const maxSections = classConfig.maxClassSections || 8;
             scheduleData = {
-                "周一": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-                "周二": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-                "周三": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-                "周四": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-                "周五": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-                "周六": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' })),
-                "周日": Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' }))
+                "周一": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                "周二": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                "周三": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                "周四": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                "周五": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                "周六": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                "周日": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] }))
             };
             homeworkRecords = [];
             selectedStudentNumbers = [];
@@ -1265,45 +766,23 @@ Licensed under the MIT License
             displayHomeworkRecords();
             updateSelectedNumbersDisplay();
             
-            // 保存到数据库（saveScheduleData和saveHomeworkRecords函数已经实现了用户隔离）
+            // 保存到数据库
             saveScheduleData();
             saveHomeworkRecords();
             
-            alert(`用户 ${currentUser} 的数据已重置！`);
+            alert('所有数据已重置！');
         }
         
-        // 获取带用户标识的数据键名
-        function getUserDataKey(baseKey) {
-            return currentUser ? `${currentUser}_${baseKey}` : baseKey;
-        }
-        
-        // 保存课程表数据到 IndexedDB（用户隔离）
+        // 保存课程表数据到 IndexedDB
         function saveScheduleData() {
-            // 访客模式下不保存数据
-            if (currentUser === 'guest') return;
-            
-            if (!db || !currentUser) return;
+            if (!db) return;
             
             const transaction = db.transaction(['schedule'], 'readwrite');
             const store = transaction.objectStore('schedule');
             
-            // 首先删除当前用户的旧数据
-            const deleteRequest = store.getAll(IDBKeyRange.only(currentUser));
-            deleteRequest.onsuccess = () => {
-                deleteRequest.result.forEach(item => {
-                    store.delete(item.id);
-                });
-                
-                // 然后保存新数据
-                Object.keys(scheduleData).forEach(day => {
-                    store.put({
-                        id: `${currentUser}_${day}`,
-                        user: currentUser,
-                        day: day,
-                        courses: scheduleData[day]
-                    });
-                });
-            };
+            Object.keys(scheduleData).forEach(day => {
+                store.put({ day: day, courses: scheduleData[day] });
+            });
             
             transaction.oncomplete = () => {
                 console.log('课程表数据保存成功');
@@ -1314,30 +793,21 @@ Licensed under the MIT License
             };
         }
         
-        // 从 IndexedDB 加载课程表数据（用户隔离）
+        // 从 IndexedDB 加载课程表数据
         function loadScheduleData() {
             return new Promise((resolve, reject) => {
-                if (!db || !currentUser) {
+                if (!db) {
                     resolve(scheduleData);
                     return;
                 }
                 
                 const transaction = db.transaction(['schedule'], 'readonly');
                 const store = transaction.objectStore('schedule');
+                const allRequest = store.getAll();
                 
-                // 创建索引查询，获取当前用户的所有数据
-                const index = store.index('by_user');
-                const request = index.getAll(currentUser);
-                
-                request.onsuccess = () => {
-                    const data = request.result;
+                allRequest.onsuccess = () => {
+                    const data = allRequest.result;
                     if (data.length > 0) {
-                        // 清空现有数据
-                        Object.keys(scheduleData).forEach(day => {
-                            scheduleData[day] = Array(8).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '' }));
-                        });
-                        
-                        // 填充用户数据
                         data.forEach(item => {
                             if (scheduleData.hasOwnProperty(item.day)) {
                                 scheduleData[item.day] = item.courses || [];
@@ -1347,26 +817,21 @@ Licensed under the MIT License
                     resolve(scheduleData);
                 };
                 
-                request.onerror = () => {
+                allRequest.onerror = () => {
                     console.error('加载课程表数据失败');
                     resolve(scheduleData);
                 };
             });
         }
         
-        // 保存作业记录到 IndexedDB（用户隔离）
+        // 保存作业记录到 IndexedDB
         function saveHomeworkRecords() {
-            // 访客模式下不保存数据
-            if (currentUser === 'guest') return;
-            
-            if (!db || !currentUser) return;
+            if (!db) return;
             
             const transaction = db.transaction(['homework'], 'readwrite');
             const store = transaction.objectStore('homework');
             
-            // 添加用户标识并保存
             homeworkRecords.forEach(record => {
-                record.user = currentUser;
                 store.put(record);
             });
             
@@ -1379,30 +844,24 @@ Licensed under the MIT License
             };
         }
         
-        // 从 IndexedDB 加载作业记录（用户隔离）
+        // 从 IndexedDB 加载作业记录
         function loadHomeworkRecords() {
             return new Promise((resolve, reject) => {
-                if (!db || !currentUser) {
+                if (!db) {
                     resolve(homeworkRecords);
                     return;
                 }
                 
                 const transaction = db.transaction(['homework'], 'readonly');
                 const store = transaction.objectStore('homework');
-                const index = store.index('by_user');
-                const request = index.getAll(currentUser);
+                const allRequest = store.getAll();
                 
-                request.onsuccess = () => {
-                    // 只加载当前用户的记录
-                    homeworkRecords = request.result.map(record => {
-                        // 移除用户标识，保持数据结构一致
-                        const { user, ...recordWithoutUser } = record;
-                        return recordWithoutUser;
-                    });
+                allRequest.onsuccess = () => {
+                    homeworkRecords = allRequest.result;
                     resolve(homeworkRecords);
                 };
                 
-                request.onerror = () => {
+                allRequest.onerror = () => {
                     console.error('加载作业记录失败');
                     resolve(homeworkRecords);
                 };
@@ -1448,20 +907,6 @@ Licensed under the MIT License
         
         // 初始化页面
         document.addEventListener('DOMContentLoaded', async function() {
-            // 首先检查登录状态
-            const isLoggedIn = checkLoginStatus();
-            
-            if (isLoggedIn) {
-                // 已登录用户或访客，直接初始化应用
-                initializeApp();
-            } else {
-                // 未登录用户，显示登录模态框
-                showLoginModal();
-            }
-        });
-        
-        // 初始化应用功能
-        async function initializeApp() {
             // 显示加载动画
             showLoader();
             
@@ -1496,10 +941,8 @@ Licensed under the MIT License
                     try { await loadClassConfig(); } catch (e) { console.error('加载班级配置失败:', e); }
                 } catch (error) {
                     console.error('数据库初始化失败:', error);
+                    // 即使数据库失败，也继续初始化应用
                 }
-                
-                // 添加用户信息到页面
-                updateUserInfo();
                 
                 // 更新加载状态
                 updateLoaderText('生成界面元素...');
@@ -1509,6 +952,9 @@ Licensed under the MIT License
                 
                 // 生成学号选择器
                 generateStudentNumberButtons();
+                
+                // 更新班训显示
+                updateClassMotto();
                 
                 // 生成课程表
                 generateSchedule();
@@ -1522,12 +968,6 @@ Licensed under the MIT License
                 // 添加配置按钮和导入功能
                 addConfigAndImportFeatures();
                 
-                // 初始化logo显示
-                const headerLogo = document.querySelector('header img.logo');
-                if (headerLogo && classConfig.logo) {
-                    headerLogo.src = classConfig.logo;
-                }
-                
                 // 注册Service Worker
                 if ('serviceWorker' in navigator) {
                     window.addEventListener('load', () => {
@@ -1540,15 +980,6 @@ Licensed under the MIT License
                             });
                     });
                 }
-                
-                // 显示欢迎消息
-                setTimeout(() => {
-                    if (currentUser === 'guest') {
-                        showNotification('欢迎使用访客模式！', 'info');
-                    } else {
-                        showNotification(`欢迎回来，${currentUser}！`, 'success');
-                    }
-                }, 1000);
             } catch (error) {
                 console.error('初始化失败:', error);
             } finally {
@@ -1557,10 +988,18 @@ Licensed under the MIT License
                     hideLoader();
                 }, 500); // 短暂延迟，确保用户能看到加载过程
             }
-        }
+        });
         
         // 更新当前日期
-        function updateCurrentDate() {
+        // 更新班训显示
+function updateClassMotto() {
+    const mottoElement = document.getElementById('class-motto');
+    if (mottoElement && classConfig.classInfo.motto) {
+        mottoElement.textContent = classConfig.classInfo.motto;
+    }
+}
+
+function updateCurrentDate() {
             const now = new Date();
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
             document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
@@ -1732,13 +1171,40 @@ Licensed under the MIT License
             });
         }
         
+        // 编辑课程节数
+        function editSectionNumber(courseId) {
+            const newNumber = prompt('请输入新的课程节数:', courseId);
+            if (newNumber === null) return;
+            
+            const number = parseInt(newNumber);
+            if (isNaN(number) || number < 1 || number > 99) {
+                alert('请输入有效的课程节数（1-99）！');
+                return;
+            }
+            
+            // 检查是否重复
+            const courses = scheduleData[currentDay];
+            if (courses.some(c => c.id !== courseId && c.id === number)) {
+                alert('该课程节数已存在！');
+                return;
+            }
+            
+            // 更新课程节数
+            const course = courses.find(c => c.id === courseId);
+            if (course) {
+                course.id = number;
+                saveScheduleData();
+                generateSchedule();
+            }
+        }
+        
         // 创建课程项
         function createCourseItem(course) {
             const courseDiv = document.createElement('div');
             courseDiv.className = 'glass-effect rounded-xl p-5 shadow-sm border border-white/30 hover-lift transition-all duration-300 relative';
             courseDiv.innerHTML = `
                 <div class="flex items-center mb-4">
-                    <span class="bg-primary/20 text-primary font-semibold rounded-full w-10 h-10 flex items-center justify-center mr-4 hover-lift transition-all duration-300">${course.id}</span>
+                    <span class="section-number bg-primary/20 text-primary font-semibold rounded-full w-10 h-10 flex items-center justify-center mr-4 hover-lift transition-all duration-300 cursor-pointer" data-id="${course.id}" title="点击修改课程节数">${course.id}</span>
                     <input type="text" placeholder="请输入科目名称" value="${course.subject || ''}" 
                            class="flex-1 px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" 
                            data-field="subject" data-id="${course.id}">
@@ -1748,18 +1214,152 @@ Licensed under the MIT License
                 </button>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">课堂表现评分</label>
-                    <div class="flex gap-2" data-field="rating" data-id="${course.id}">
-                        ${Array(5).fill(null).map((_, i) => {
-                            const starIndex = i + 1;
-                            return `<i class="fa fa-star text-lg cursor-pointer transition-transform hover:scale-110 ${starIndex <= course.rating ? 'star-active' : 'star-inactive'}" data-rating="${starIndex}"></i>`;
-                        }).join('')}
+                    <!-- 快速选择科目 -->
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        ${classConfig.subjects.map(subject => `
+                            <button class="quick-subject-btn px-3 py-1 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-subject="${subject}">
+                                ${subject}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <!-- 评分显示，根据科目类型显示不同的评分方式 -->
+                    <div class="space-y-3" data-field="rating" data-id="${course.id}">
+                        ${course.subject === '数学' || course.subject === '英语' ? `
+                            <!-- 分层班评分 - 三行显示 -->
+                            <div class="flex items-center">
+                                <span class="w-8 text-sm text-gray-500">1班:</span>
+                                <div class="flex-1 flex gap-1">
+                                    ${Array(5).fill(null).map((_, i) => {
+                                        const starIndex = i + 1;
+                                        return `<i class="fa fa-star text-sm cursor-pointer transition-transform hover:scale-110 ${starIndex <= (course.layerRatings?.layer1 || 0) ? 'star-active' : 'star-inactive'}" data-rating="${starIndex}" data-layer="1"></i>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-8 text-sm text-gray-500">2班:</span>
+                                <div class="flex-1 flex gap-1">
+                                    ${Array(5).fill(null).map((_, i) => {
+                                        const starIndex = i + 1;
+                                        return `<i class="fa fa-star text-sm cursor-pointer transition-transform hover:scale-110 ${starIndex <= (course.layerRatings?.layer2 || 0) ? 'star-active' : 'star-inactive'}" data-rating="${starIndex}" data-layer="2"></i>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-8 text-sm text-gray-500">3班:</span>
+                                <div class="flex-1 flex gap-1">
+                                    ${Array(5).fill(null).map((_, i) => {
+                                        const starIndex = i + 1;
+                                        return `<i class="fa fa-star text-sm cursor-pointer transition-transform hover:scale-110 ${starIndex <= (course.layerRatings?.layer3 || 0) ? 'star-active' : 'star-inactive'}" data-rating="${starIndex}" data-layer="3"></i>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : `
+                            <!-- 普通评分 -->
+                            <div class="flex gap-2">
+                                ${Array(5).fill(null).map((_, i) => {
+                                    const starIndex = i + 1;
+                                    return `<i class="fa fa-star text-lg cursor-pointer transition-transform hover:scale-110 ${starIndex <= course.rating ? 'star-active' : 'star-inactive'}" data-rating="${starIndex}"></i>`;
+                                }).join('')}
+                            </div>
+                        `}
                     </div>
                 </div>
+                
+                <!-- 课堂不足及建议 - 根据科目类型显示不同 -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">课堂不足及建议</label>
-                    <textarea placeholder="请输入课堂不足及建议" rows="2" 
-                              class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" 
-                              data-field="notes" data-id="${course.id}">${course.notes || ''}</textarea>
+                    ${course.subject === '数学' || course.subject === '英语' ? `
+                        <!-- 分层班的课堂不足及建议 -->
+                        <label class="block text-sm font-medium text-gray-700 mb-2">课堂不足及建议</label>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">1班：</label>
+                                <textarea placeholder="请输入1班课堂不足及建议" rows="2" 
+                                          class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" 
+                                          data-field="notes" data-id="${course.id}" data-layer="1">${course.layerNotes?.layer1 || ''}</textarea>
+                                <!-- 1班快速选择理由 -->
+                                <div class="mt-2">
+                                    <label class="block text-xs text-gray-500 mb-1">快速选择理由：</label>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="上课说话" data-layer="1">上课说话</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="睡觉" data-layer="1">睡觉</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="不记笔记" data-layer="1">不记笔记</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="注意力不集中" data-layer="1">注意力不集中</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="扰乱课堂秩序" data-layer="1">扰乱课堂秩序</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">2班：</label>
+                                <textarea placeholder="请输入2班课堂不足及建议" rows="2" 
+                                          class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" 
+                                          data-field="notes" data-id="${course.id}" data-layer="2">${course.layerNotes?.layer2 || ''}</textarea>
+                                <!-- 2班快速选择理由 -->
+                                <div class="mt-2">
+                                    <label class="block text-xs text-gray-500 mb-1">快速选择理由：</label>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="上课说话" data-layer="2">上课说话</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="睡觉" data-layer="2">睡觉</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="不记笔记" data-layer="2">不记笔记</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="注意力不集中" data-layer="2">注意力不集中</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="扰乱课堂秩序" data-layer="2">扰乱课堂秩序</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">3班：</label>
+                                <textarea placeholder="请输入3班课堂不足及建议" rows="2" 
+                                          class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" 
+                                          data-field="notes" data-id="${course.id}" data-layer="3">${course.layerNotes?.layer3 || ''}</textarea>
+                                <!-- 3班快速选择理由 -->
+                                <div class="mt-2">
+                                    <label class="block text-xs text-gray-500 mb-1">快速选择理由：</label>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="上课说话" data-layer="3">上课说话</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="睡觉" data-layer="3">睡觉</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="不记笔记" data-layer="3">不记笔记</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="注意力不集中" data-layer="3">注意力不集中</button>
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="扰乱课堂秩序" data-layer="3">扰乱课堂秩序</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : `
+                        <!-- 普通课堂不足及建议 -->
+                        <label class="block text-sm font-medium text-gray-700 mb-2">课堂不足及建议</label>
+                        <textarea placeholder="请输入课堂不足及建议" rows="2" 
+                                  class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300" 
+                                  data-field="notes" data-id="${course.id}">${course.notes || ''}</textarea>
+                        <!-- 快速选择理由 -->
+                        <div class="mt-2">
+                            <label class="block text-xs text-gray-500 mb-1">快速选择理由：</label>
+                            <div class="flex flex-wrap gap-2">
+                                <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="上课说话">上课说话</button>
+                                <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="睡觉">睡觉</button>
+                                <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="不记笔记">不记笔记</button>
+                                <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="注意力不集中">注意力不集中</button>
+                                <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="扰乱课堂秩序">扰乱课堂秩序</button>
+                            </div>
+                        </div>
+                    `}
+                </div>
+                
+                <!-- 快速选择学号功能 -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">表现不佳学生</label>
+                    <div class="mb-2">
+                        <div id="course-students-${course.id}" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-hide p-2 glass-effect border border-white/30 rounded-lg min-h-[60px]">
+                            ${course.poorStudents ? course.poorStudents.map(num => `
+                                <div class="inline-flex items-center glass-effect border border-white/30 bg-danger/20 text-danger px-2 py-1 rounded-full text-xs hover-lift transition-all duration-300">
+                                    ${num} <span class="ml-1 cursor-pointer remove-poor-student" data-number="${num}">&times;</span>
+                                </div>
+                            `).join('') : '<span class="text-gray-400 text-xs">暂无选择</span>'}
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="quick-select-students-btn px-3 py-1 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}">
+                            <i class="fa fa-user-o mr-1"></i>选择学生
+                        </button>
+                    </div>
                 </div>`;
             
             // 绑定科目输入事件
@@ -1768,14 +1368,67 @@ Licensed under the MIT License
                 updateCourseData(course.id, 'subject', this.value);
             });
             
+            // 绑定快速选择科目事件
+            const quickSubjectBtns = courseDiv.querySelectorAll('.quick-subject-btn');
+            quickSubjectBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const courseId = parseInt(this.dataset.id);
+                    const subject = this.dataset.subject;
+                    
+                    // 更新科目
+                    updateCourseData(courseId, 'subject', subject);
+                    
+                    // 更新UI中的科目输入框
+                    const subjectInput = courseDiv.querySelector('[data-field="subject"]');
+                    if (subjectInput) {
+                        subjectInput.value = subject;
+                    }
+                    
+                    // 添加点击动画效果
+                    this.classList.add('bg-primary/20');
+                    setTimeout(() => {
+                        this.classList.remove('bg-primary/20');
+                    }, 300);
+                    
+                    // 重新生成课程表以更新评分显示
+                    setTimeout(() => {
+                        generateSchedule();
+                    }, 50);
+                });
+            });
+            
             // 绑定评分点击事件
             const ratingContainer = courseDiv.querySelector('[data-field="rating"]');
             const stars = ratingContainer.querySelectorAll('.fa-star');
             stars.forEach(star => {
                 star.addEventListener('click', function() {
                     const rating = parseInt(this.dataset.rating);
-                    updateCourseData(course.id, 'rating', rating);
-                    updateStarDisplay(stars, rating);
+                    
+                    // 检查是否有分层信息
+                    if (this.dataset.layer) {
+                        // 分层评分逻辑
+                        const layer = this.dataset.layer;
+                        const courseId = parseInt(ratingContainer.dataset.id);
+                        const course = scheduleData[currentDay].find(c => c.id === courseId);
+                        
+                        // 确保layerRatings对象存在
+                        if (!course.layerRatings) {
+                            course.layerRatings = { layer1: 0, layer2: 0, layer3: 0 };
+                        }
+                        
+                        // 更新对应分层的评分
+                        course.layerRatings[`layer${layer}`] = rating;
+                        
+                        // 保存数据
+                        saveScheduleData();
+                        
+                        // 更新UI
+                        generateSchedule();
+                    } else {
+                        // 普通评分逻辑
+                        updateCourseData(course.id, 'rating', rating);
+                        updateStarDisplay(stars, rating);
+                    }
                     
                     // 添加点击动画效果
                     this.classList.add('animate-pulse');
@@ -1787,27 +1440,65 @@ Licensed under the MIT License
                 // 添加悬停效果
                 star.addEventListener('mouseenter', function() {
                     const rating = parseInt(this.dataset.rating);
-                    // 临时高亮星星用于预览
-                    stars.forEach(s => {
-                        const sRating = parseInt(s.dataset.rating);
-                        if (sRating <= rating) {
-                            s.classList.add('scale-125');
-                        }
-                    });
+                    
+                    if (this.dataset.layer) {
+                        // 分层评分悬停效果
+                        const layer = this.dataset.layer;
+                        const layerStars = ratingContainer.querySelectorAll(`[data-layer="${layer}"]`);
+                        layerStars.forEach(s => {
+                            const sRating = parseInt(s.dataset.rating);
+                            if (sRating <= rating) {
+                                s.classList.add('scale-125');
+                            }
+                        });
+                    } else {
+                        // 普通评分悬停效果
+                        stars.forEach(s => {
+                            const sRating = parseInt(s.dataset.rating);
+                            if (sRating <= rating) {
+                                s.classList.add('scale-125');
+                            }
+                        });
+                    }
                 });
                 
                 star.addEventListener('mouseleave', function() {
-                    // 恢复星星状态
-                    stars.forEach(s => {
-                        s.classList.remove('scale-125');
-                    });
+                    if (this.dataset.layer) {
+                        // 分层评分恢复
+                        const layer = this.dataset.layer;
+                        const layerStars = ratingContainer.querySelectorAll(`[data-layer="${layer}"]`);
+                        layerStars.forEach(s => {
+                            s.classList.remove('scale-125');
+                        });
+                    } else {
+                        // 普通评分恢复
+                        stars.forEach(s => {
+                            s.classList.remove('scale-125');
+                        });
+                    }
                 });
             });
             
-            // 绑定备注输入事件
-            const notesInput = courseDiv.querySelector('[data-field="notes"]');
-            notesInput.addEventListener('input', function() {
-                updateCourseData(course.id, 'notes', this.value);
+            // 绑定笔记输入事件 - 同时处理普通笔记和分层笔记
+            const notesInputs = courseDiv.querySelectorAll('[data-field="notes"]');
+            notesInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    const courseId = parseInt(this.dataset.id);
+                    const layer = this.dataset.layer;
+                    const course = scheduleData[currentDay].find(c => c.id === courseId);
+                    
+                    if (layer) {
+                        // 分层笔记处理
+                        if (!course.layerNotes) {
+                            course.layerNotes = { layer1: '', layer2: '', layer3: '' };
+                        }
+                        course.layerNotes[`layer${layer}`] = this.value;
+                        saveScheduleData();
+                    } else {
+                        // 普通笔记处理
+                        updateCourseData(course.id, 'notes', this.value);
+                    }
+                });
             });
             
             // 绑定删除按钮事件
@@ -1815,6 +1506,39 @@ Licensed under the MIT License
             deleteBtn.addEventListener('click', function() {
                 const courseId = parseInt(this.dataset.id);
                 deleteCourse(courseId);
+            });
+            
+            // 绑定选择学生按钮事件
+            const selectStudentsBtn = courseDiv.querySelector('.quick-select-students-btn');
+            selectStudentsBtn.addEventListener('click', function() {
+                const courseId = parseInt(this.dataset.id);
+                showStudentSelectionModal(courseId);
+            });
+            
+            // 绑定快速选择理由事件
+            const quickReasonBtns = courseDiv.querySelectorAll('.quick-reason-btn');
+            quickReasonBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const courseId = parseInt(this.dataset.id);
+                    const reason = this.dataset.reason;
+                    handleQuickReason(courseId, reason);
+                });
+            });
+            
+            // 绑定已选学生移除按钮事件
+            const removeButtons = courseDiv.querySelectorAll('.remove-poor-student');
+            removeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const number = parseInt(this.dataset.number);
+                    removePoorStudent(course.id, number);
+                });
+            });
+            
+            // 绑定课程节数编辑事件
+            const sectionNumberEl = courseDiv.querySelector('.section-number');
+            sectionNumberEl.addEventListener('click', function() {
+                const courseId = parseInt(this.dataset.id);
+                editSectionNumber(courseId);
             });
             
             return courseDiv;
@@ -1827,6 +1551,338 @@ Licensed under the MIT License
                 scheduleData[currentDay][courseIndex][field] = value;
                 // 自动保存到 IndexedDB
                 saveScheduleData();
+            }
+        }
+        
+        // 更新表现不佳学生列表
+        function updatePoorStudents(courseId, students) {
+            const courseIndex = scheduleData[currentDay].findIndex(c => c.id === courseId);
+            if (courseIndex !== -1) {
+                scheduleData[currentDay][courseIndex].poorStudents = students;
+                // 自动保存到 IndexedDB
+                saveScheduleData();
+            }
+        }
+        
+        // 创建学生选择模态框
+        function createStudentSelectionModal() {
+            const modal = document.createElement('div');
+            modal.id = 'student-selection-modal';
+            modal.className = 'fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="glass-effect rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <div class="p-6 border-b border-white/20">
+                        <h2 class="text-2xl font-bold text-dark flex items-center gap-2">
+                            <i class="fa fa-users text-primary"></i>
+                            选择表现不佳学生
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">选择学号</label>
+                            <div id="modal-student-numbers" class="flex flex-wrap gap-2 max-h-64 overflow-y-auto scrollbar-hide p-3 glass-effect border border-white/30 rounded-xl"></div>
+                        </div>
+                        
+                        <div class="flex gap-3 p-4 glass-effect border border-white/20 rounded-xl">
+                            <button id="modal-select-all-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
+                                全选
+                            </button>
+                            <button id="modal-select-range-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
+                                选择范围
+                            </button>
+                            <button id="modal-clear-all-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
+                                清空选择
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6 border-t border-white/20 flex justify-end gap-3">
+                        <button id="modal-cancel" class="px-5 py-2.5 glass-effect border border-white/30 rounded-lg hover:bg-gray-100/50 transition-all duration-300">取消</button>
+                        <button id="modal-confirm" class="px-5 py-2.5 gradient-border bg-primary hover:bg-primary/90 text-white rounded-lg transition-all duration-300 hover:shadow-lg">确认选择</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        // 显示学生选择模态框
+        function showStudentSelectionModal(courseId) {
+            const modal = document.getElementById('student-selection-modal');
+            if (!modal) {
+                createStudentSelectionModal();
+                bindStudentSelectionModalEvents();
+            }
+            
+            // 保存当前课程ID
+            modal.dataset.courseId = courseId;
+            
+            // 获取当前课程的表现不佳学生列表
+            const course = scheduleData[currentDay].find(c => c.id === courseId);
+            const currentPoorStudents = course ? course.poorStudents : [];
+            
+            // 生成学号选择按钮
+            const container = document.getElementById('modal-student-numbers');
+            container.innerHTML = '';
+            
+            // 根据配置生成学号按钮
+            for (let i = classConfig.minStudentId; i <= classConfig.maxStudentId; i++) {
+                // 跳过排除的学号
+                if (classConfig.excludedIds.includes(i)) continue;
+                
+                const button = document.createElement('button');
+                button.className = 'student-number-btn w-10 h-10 flex items-center justify-center rounded-full glass-effect border border-white/30 hover:bg-primary/10 transition-all duration-300 hover-lift';
+                button.textContent = i;
+                button.dataset.number = i;
+                
+                // 如果已经在表现不佳学生列表中，标记为选中
+                if (currentPoorStudents.includes(i)) {
+                    button.classList.add('bg-primary/20', 'border-primary');
+                }
+                
+                button.addEventListener('click', function() {
+                    const number = parseInt(this.dataset.number);
+                    const index = currentPoorStudents.indexOf(number);
+                    
+                    if (index === -1) {
+                        currentPoorStudents.push(number);
+                        this.classList.add('bg-primary/20', 'border-primary');
+                    } else {
+                        currentPoorStudents.splice(index, 1);
+                        this.classList.remove('bg-primary/20', 'border-primary');
+                    }
+                });
+                
+                container.appendChild(button);
+            }
+            
+            // 显示模态框
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // 关闭学生选择模态框
+        function closeStudentSelectionModal() {
+            const modal = document.getElementById('student-selection-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // 绑定学生选择模态框事件
+        function bindStudentSelectionModalEvents() {
+            const modal = document.getElementById('student-selection-modal');
+            if (!modal) return;
+            
+            // 取消按钮
+            document.getElementById('modal-cancel').addEventListener('click', closeStudentSelectionModal);
+            
+            // 确认按钮
+            document.getElementById('modal-confirm').addEventListener('click', function() {
+                const courseId = parseInt(modal.dataset.courseId);
+                const course = scheduleData[currentDay].find(c => c.id === courseId);
+                
+                if (course) {
+                    // 更新课程的表现不佳学生列表
+                    updatePoorStudents(courseId, course.poorStudents.sort((a, b) => a - b));
+                    
+                    // 更新UI显示
+                    const container = document.getElementById(`course-students-${courseId}`);
+                    if (container) {
+                        if (course.poorStudents.length === 0) {
+                            container.innerHTML = '<span class="text-gray-400 text-xs">暂无选择</span>';
+                        } else {
+                            container.innerHTML = course.poorStudents.map(num => `
+                                <div class="inline-flex items-center glass-effect border border-white/30 bg-danger/20 text-danger px-2 py-1 rounded-full text-xs hover-lift transition-all duration-300">
+                                    ${num} <span class="ml-1 cursor-pointer remove-poor-student" data-number="${num}" data-id="${courseId}">&times;</span>
+                                </div>
+                            `).join('');
+                            
+                            // 绑定移除按钮事件
+                            container.querySelectorAll('.remove-poor-student').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const number = parseInt(this.dataset.number);
+                                    const courseId = parseInt(this.dataset.id);
+                                    removePoorStudent(courseId, number);
+                                });
+                            });
+                        }
+                    }
+                }
+                
+                closeStudentSelectionModal();
+            });
+            
+            // 模态框批量操作按钮
+            document.getElementById('modal-select-all-btn').addEventListener('click', function() {
+                const courseId = parseInt(modal.dataset.courseId);
+                const course = scheduleData[currentDay].find(c => c.id === courseId);
+                if (course) {
+                    course.poorStudents = [];
+                    
+                    for (let i = classConfig.minStudentId; i <= classConfig.maxStudentId; i++) {
+                        if (!classConfig.excludedIds.includes(i)) {
+                            course.poorStudents.push(i);
+                        }
+                    }
+                    
+                    // 更新UI
+                    updateModalStudentButtons(course.poorStudents);
+                }
+            });
+            
+            document.getElementById('modal-select-range-btn').addEventListener('click', function() {
+                const courseId = parseInt(modal.dataset.courseId);
+                const course = scheduleData[currentDay].find(c => c.id === courseId);
+                if (course) {
+                    const rangeInput = prompt('请输入学号范围（格式：开始-结束，如 1-10）：');
+                    if (!rangeInput) return;
+                    
+                    const [start, end] = rangeInput.split('-').map(Number);
+                    if (isNaN(start) || isNaN(end) || start > end) {
+                        alert('请输入有效的范围格式！');
+                        return;
+                    }
+                    
+                    // 验证范围在有效范围内
+                    if (start < classConfig.minStudentId || end > classConfig.maxStudentId) {
+                        alert(`范围必须在 ${classConfig.minStudentId}-${classConfig.maxStudentId} 之间！`);
+                        return;
+                    }
+                    
+                    // 添加范围内的学号
+                    for (let i = start; i <= end; i++) {
+                        if (!classConfig.excludedIds.includes(i) && !course.poorStudents.includes(i)) {
+                            course.poorStudents.push(i);
+                        }
+                    }
+                    
+                    // 更新UI
+                    updateModalStudentButtons(course.poorStudents);
+                }
+            });
+            
+            document.getElementById('modal-clear-all-btn').addEventListener('click', function() {
+                const courseId = parseInt(modal.dataset.courseId);
+                const course = scheduleData[currentDay].find(c => c.id === courseId);
+                if (course) {
+                    course.poorStudents = [];
+                    // 更新UI
+                    updateModalStudentButtons([]);
+                }
+            });
+        }
+        
+        // 更新模态框中的学号按钮状态
+        function updateModalStudentButtons(selectedNumbers) {
+            document.querySelectorAll('#modal-student-numbers .student-number-btn').forEach(button => {
+                const number = parseInt(button.dataset.number);
+                if (selectedNumbers.includes(number)) {
+                    button.classList.add('bg-primary/20', 'border-primary');
+                } else {
+                    button.classList.remove('bg-primary/20', 'border-primary');
+                }
+            });
+        }
+        
+        // 移除表现不佳学生
+        function removePoorStudent(courseId, number) {
+            const course = scheduleData[currentDay].find(c => c.id === courseId);
+            if (course) {
+                const index = course.poorStudents.indexOf(number);
+                if (index !== -1) {
+                    course.poorStudents.splice(index, 1);
+                    updatePoorStudents(courseId, course.poorStudents);
+                    
+                    // 更新UI
+                    const container = document.getElementById(`course-students-${courseId}`);
+                    if (container) {
+                        if (course.poorStudents.length === 0) {
+                            container.innerHTML = '<span class="text-gray-400 text-xs">暂无选择</span>';
+                        } else {
+                            container.innerHTML = course.poorStudents.map(num => `
+                                <div class="inline-flex items-center glass-effect border border-white/30 bg-danger/20 text-danger px-2 py-1 rounded-full text-xs hover-lift transition-all duration-300">
+                                    ${num} <span class="ml-1 cursor-pointer remove-poor-student" data-number="${num}" data-id="${courseId}">&times;</span>
+                                </div>
+                            `).join('');
+                            
+                            // 重新绑定移除按钮事件
+                            container.querySelectorAll('.remove-poor-student').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const number = parseInt(this.dataset.number);
+                                    const courseId = parseInt(this.dataset.id);
+                                    removePoorStudent(courseId, number);
+                                });
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 处理快速选择理由
+        function handleQuickReason(courseId, reason) {
+            // 获取触发事件的按钮，从中获取layer信息
+            const event = window.event;
+            const reasonBtn = event ? event.currentTarget : document.querySelector(`.quick-reason-btn[data-id="${courseId}"][data-reason="${reason}"]`);
+            const layer = reasonBtn ? reasonBtn.dataset.layer : '1'; // 默认使用1班
+            const layerKey = `layer${layer}`;
+            
+            const course = scheduleData[currentDay].find(c => c.id === courseId);
+            if (course) {
+                // 检查是否是分层科目（数学或英语）
+                if (course.subject === '数学' || course.subject === '英语') {
+                    // 分层科目 - 根据data-layer属性确定班级
+                    if (!course.layerNotes) {
+                        course.layerNotes = { layer1: '', layer2: '', layer3: '' };
+                    }
+                    
+                    let newNote = course.layerNotes[layerKey] || '';
+                    if (newNote) {
+                        if (!newNote.includes(reason)) {
+                            newNote += '，' + reason;
+                        }
+                    } else {
+                        newNote = reason;
+                    }
+                    
+                    course.layerNotes[layerKey] = newNote;
+                    saveScheduleData();
+                    
+                    // 更新UI
+                    const notesInput = document.querySelector(`textarea[data-field="notes"][data-id="${courseId}"][data-layer="${layer}"]`);
+                    if (notesInput) {
+                        notesInput.value = newNote;
+                    }
+                } else {
+                    // 普通科目处理
+                    let newNotes = course.notes || '';
+                    if (newNotes) {
+                        // 检查是否已经包含该理由
+                        if (!newNotes.includes(reason)) {
+                            newNotes += '，' + reason;
+                        }
+                    } else {
+                        newNotes = reason;
+                    }
+                    
+                    // 更新备注
+                    updateCourseData(courseId, 'notes', newNotes);
+                    
+                    // 更新UI
+                    const notesInput = document.querySelector(`textarea[data-field="notes"][data-id="${courseId}"]:not([data-layer])`);
+                    if (notesInput) {
+                        notesInput.value = newNotes;
+                    }
+                }
+                
+                // 添加点击动画效果
+                if (reasonBtn) {
+                    reasonBtn.classList.add('bg-primary/20');
+                    setTimeout(() => {
+                        reasonBtn.classList.remove('bg-primary/20');
+                    }, 300);
+                }
             }
         }
         
@@ -2043,13 +2099,31 @@ Licensed under the MIT License
             Object.keys(scheduleData).forEach(day => {
                 scheduleData[day].forEach(course => {
                     if (course.subject) { // 只导出有数据的课程
-                        scheduleDataForExcel.push({
-                            '星期': day,
-                            '课时': course.id,
-                            '科目': course.subject,
-                            '评分': course.rating,
-                            '课堂不足及建议': course.notes
-                        });
+                        // 检查是否是分层科目（数学或英语）
+                        if (course.subject === '数学' || course.subject === '英语') {
+                            // 为每个分层单独创建一行数据
+                            for (let layer = 1; layer <= 3; layer++) {
+                                const layerKey = `layer${layer}`;
+                                scheduleDataForExcel.push({
+                                    '星期': day,
+                                    '课时': course.id,
+                                    '科目': `${course.subject}(${layer}班)`,
+                                    '评分': course.layerRatings?.[layerKey] || 0,
+                                    '课堂不足及建议': course.layerNotes?.[layerKey] || '',
+                                    '表现不佳学生学号': course.poorStudents?.join(', ') || ''
+                                });
+                            }
+                        } else {
+                            // 普通科目保持原有逻辑
+                            scheduleDataForExcel.push({
+                                '星期': day,
+                                '课时': course.id,
+                                '科目': course.subject,
+                                '评分': course.rating,
+                                '课堂不足及建议': course.notes,
+                                '表现不佳学生学号': course.poorStudents?.join(', ') || ''
+                            });
+                        }
                     }
                 });
             });
