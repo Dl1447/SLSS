@@ -13,11 +13,13 @@ SLSS is a powerful yet lightweight web application that runs entirely in the bro
 - **Grade-Specific Subject Management**: Automatic subject configuration based on selected grade (Junior 1-3)
 
 ### Academic Performance Tracking
-- **Weekly Schedule Management**: Create and manage courses across all days of the week
+- **Weekly Schedule Management**: Create and manage courses across all days of the week with automatic section number sorting
 - **Performance Evaluation**: Rate classroom engagement using a 5-star system
 - **Poor Student Identification**: Track and manage students with below-par performance
-- **Quick Reason Selection**: Pre-defined reasons for classroom notes and performance issues
+- **Quick Reason Selection**: Pre-defined reasons for classroom notes with added "None" option
 - **Class Notes Management**: Document observations and improvement suggestions
+- **Homework Submission Tracking**: Record and manage students who haven't submitted assignments
+- **Subject Filtering**: Automatically excludes non-homework subjects (Psychology and Information Technology)
 
 ### Data Management
 - **Excel Export**: Generate comprehensive reports including course performance and homework submission data
@@ -30,6 +32,9 @@ SLSS is a powerful yet lightweight web application that runs entirely in the bro
 - **Responsive Design**: Optimized for use across mobile, tablet, and desktop devices
 - **Offline Functionality**: Full operation capabilities without internet connection
 - **Real-time Updates**: Instant UI feedback with automatic data persistence
+- **Enhanced Modal Interfaces**: Glass-morphism style pop-up windows for subject selection, custom input, and section number editing
+- **Toast Notifications**: Elegant feedback messages for user actions with automatic fade-out
+- **Announcement System**: Optional announcements displayed at controlled intervals (every 5 visits)
 
 ## 🛠️ Technical Stack
 
@@ -75,11 +80,20 @@ SLSS is a powerful yet lightweight web application that runs entirely in the bro
 - Create and organize courses for each day of the week
 - Set course subjects, ratings, and notes
 - Add special handling for layered subjects (Math and English)
+- Edit course section numbers using an elegant glass-morphism modal interface
+- Courses automatically reorder when section numbers are modified
 
 ### Student Performance Tracking
 - Identify and record students with poor performance for each course
 - Use quick selection buttons to efficiently manage student lists
-- Document specific reasons for performance issues
+- Document specific reasons for performance issues including the "None" option
+- Access student selection through glass-morphism modal interface
+
+### Homework Management
+- Track students who haven't submitted assignments
+- Select subjects using the enhanced glass-morphism pop-up interface
+- Subject selection automatically excludes Psychology and Information Technology courses
+- Add custom subjects through a dedicated modal interface
 
 ### Data Export
 - Generate Excel reports containing all course data
@@ -97,6 +111,22 @@ The application is designed with offline-first principles:
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 📝 Release Notes
+
+### Latest Updates
+- Enhanced user interface with glass-morphism modals replacing traditional dropdowns
+- Added Toast notification system for better user feedback
+- Improved section number management with automatic course reordering
+- Updated quick reason selection with "None" option
+- Modified subject filtering to exclude Psychology and Information Technology from homework tracking
+- Implemented controlled announcement display (every 5 visits)
+
+### User Interface Improvements
+- Replaced standard dropdowns with elegant glass-morphism selection modals
+- Added smooth animations and transitions for all interactive elements
+- Improved modal interfaces with consistent design patterns
+- Added responsive adjustments for optimal viewing across all device sizes
 
 ## 🤝 Contributing
 

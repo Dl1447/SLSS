@@ -5,7 +5,7 @@ Student Learning Situation Statistics (SLSS)
 A lightweight classroom management web application for tracking student performance,
 homework submission status, and course evaluations.
 
-Copyright (c) 2025 Alan ab
+Copyright (c) 2025 All_lan
 Licensed under the MIT License
 -->
 <html lang="zh-CN">
@@ -71,9 +71,25 @@ Licensed under the MIT License
             .scrollbar-hide::-webkit-scrollbar {
                 display: none;
             }
-            .scrollbar-hide {
-                -ms-overflow-style: none;
-                scrollbar-width: none;
+            .scrollbar-hide {                -ms-overflow-style: none;                scrollbar-width: none;            }
+            .ios-scrollbar::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            .ios-scrollbar::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .ios-scrollbar::-webkit-scrollbar-thumb {
+                background: rgba(156, 163, 175, 0.5);
+                border-radius: 3px;
+                transition: background 0.3s ease;
+            }
+            .ios-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: rgba(156, 163, 175, 0.8);
+            }
+            .ios-scrollbar {
+                scrollbar-width: thin;
+                scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
             }
             .star-active {
                 color: #F59E0B;
@@ -186,10 +202,13 @@ Licensed under the MIT License
                         <div class="space-y-6">
                             
                             <div class="mb-6">
-                                <label for="subject-select" class="block text-sm font-medium text-gray-700 mb-2">选择科目</label>
-                                <select id="subject-select" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
-                                    <!-- 科目将通过JavaScript动态生成 -->
-                                </select>
+                                <label for="subject-select-btn" class="block text-sm font-medium text-gray-700 mb-2">选择科目</label>
+                                <div class="relative">
+                                    <button id="subject-select-btn" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 text-left flex justify-between items-center">
+                                        <span id="selected-subject-text">请选择科目</span>
+                                        <i class="fa fa-chevron-down text-gray-500"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             
@@ -249,7 +268,7 @@ Licensed under the MIT License
                         </div>
                         
                         
-                        <div id="schedule-container" class="space-y-3 max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-hide pb-2">
+                        <div id="schedule-container" class="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide pb-2">
                             
                         </div>
                     </div>
@@ -258,8 +277,28 @@ Licensed under the MIT License
         </div>
         
         
+        <!-- 你知道吗栏目 -->
+        <div class="glass-effect rounded-2xl shadow-xl overflow-hidden mb-8 hover-lift">
+            <div class="p-5 border-b border-white/20 flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-dark flex items-center gap-2">
+                    <i class="fa fa-lightbulb-o text-warning animate-pulse-slow"></i>
+                    你知道吗？（我不知道）
+                </h3>
+                <button id="fun-fact-refresh" class="gradient-border bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg">
+                    <i class="fa fa-refresh"></i>
+                    <span>刷新</span>
+                </button>
+            </div>
+            <div class="p-6">
+                <p id="fun-fact-content" class="text-gray-700 text-lg leading-relaxed"></p>
+                <div class="mt-4 text-right">
+                    <span id="fact-refresh-timer" class="text-sm text-gray-500">下次刷新: <span id="countdown">60</span>秒</span>
+                </div>
+            </div>
+        </div>
+        
         <footer class="text-center text-gray-500 text-sm mt-12">
-            <p>GlidePlum &copy; 2025 Alan ab</p>
+            <p>GlidePlum &copy; 2025 All_lan</p>
         </footer>
     </div>
 
@@ -283,16 +322,16 @@ Licensed under the MIT License
             minStudentId: 1,
             maxStudentId: 50,
             excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29,30], // 排除的学号
-            subjects: ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治"],
+            subjects: ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
             gradeSubjects: {
-                "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                "初一": ["语文", "数学", "英语", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"]
             },
             classInfo: {
                 name: "初一二班",
                 grade: "初一",
-                motto: "团结拼搏，追求卓越"
+                motto: "「以 Glide 之速，结 Plum 之果」"
             }
         };
         
@@ -353,16 +392,16 @@ Licensed under the MIT License
                                     minStudentId: 1,
                                     maxStudentId: 50,
                                     excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29],
-                                    subjects: ["语文", "数学", "英语", "历史", "地理", "政治"],
+                                    subjects: ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
                                     gradeSubjects: {
-                                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"]
                                     },
                                     classInfo: {
                                     name: "初一二班",
                                     grade: "初一",
-                                    motto: "团结拼搏，追求卓越"
+                                    motto: "「以 Glide 之速，结 Plum 之果」"
                                 }
                                 }
                             });
@@ -394,9 +433,9 @@ Licensed under the MIT License
                 // 确保gradeSubjects配置始终存在
                 if (!classConfig.gradeSubjects) {
                     classConfig.gradeSubjects = {
-                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治", "生物", "体育", "心理", "信息"],
+                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治", "生物", "体育", "心理", "信息"],
+                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治", "生物", "体育", "心理", "信息"]
                     };
                 }
                 
@@ -418,9 +457,9 @@ Licensed under the MIT License
                             // 确保gradeSubjects配置存在
                             if (!classConfig.gradeSubjects) {
                                 classConfig.gradeSubjects = {
-                                    "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                                    "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                                    "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                                    "初一": ["语文", "数学", "英语", "历史", "地理", "政治", "生物", "体育", "心理", "信息"],
+                                    "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治", "生物", "体育", "心理", "信息"],
+                                    "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治", "生物", "体育", "心理", "信息"]
                                 };
                             }
                             // 确保学科列表基于年级正确设置
@@ -466,16 +505,87 @@ Licensed under the MIT License
             }
         }
         
+        // 创建科目选择模态框
+        function createSubjectSelectionModal() {
+            const modal = document.createElement('div');
+            modal.id = 'subject-selection-modal';
+            modal.className = 'fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="glass-effect rounded-2xl w-full max-w-md p-6">
+                    <div class="p-4 border-b border-white/20 mb-4">
+                        <h2 class="text-xl font-bold text-dark">选择科目</h2>
+                    </div>
+                    <div class="max-h-80 overflow-y-auto p-2">
+                        <div id="subject-options" class="grid grid-cols-2 gap-3">
+                            <!-- 科目选项将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <button id="close-subject-modal" class="w-full px-4 py-3 gradient-border bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 hover:shadow-lg">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // 添加关闭事件
+            document.getElementById('close-subject-modal').addEventListener('click', function() {
+                modal.classList.add('hidden');
+            });
+            
+            // 点击模态框外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        }
+        
         // 生成科目选择器
         function generateSubjectSelect() {
-            const select = document.getElementById('subject-select');
-            select.innerHTML = '';
+            // 过滤掉不需要的科目：自习、美术、音乐、班会、心理、信息、体育
+            const excludedSubjects = ['自习', '美术', '音乐', '班会', '心理', '信息', '体育'];
+            const filteredSubjects = classConfig.subjects.filter(subject => 
+                !excludedSubjects.includes(subject)
+            );
             
-            classConfig.subjects.forEach(subject => {
-                const option = document.createElement('option');
-                option.value = subject;
+            // 创建并绑定科目选择模态框
+            if (!document.getElementById('subject-selection-modal')) {
+                createSubjectSelectionModal();
+            }
+            
+            // 清空现有选项
+            const optionsContainer = document.getElementById('subject-options');
+            optionsContainer.innerHTML = '';
+            
+            // 添加自定义选项
+            const customOption = document.createElement('button');
+            customOption.className = 'subject-option-btn py-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 hover-lift';
+            customOption.dataset.subject = '自定义';
+            customOption.textContent = '自定义';
+            customOption.addEventListener('click', function() {
+                document.getElementById('selected-subject-text').textContent = '自定义';
+                document.getElementById('subject-selection-modal').classList.add('hidden');
+            });
+            optionsContainer.appendChild(customOption);
+            
+            // 添加科目选项
+            filteredSubjects.forEach(subject => {
+                const option = document.createElement('button');
+                option.className = 'subject-option-btn py-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 hover-lift';
+                option.dataset.subject = subject;
                 option.textContent = subject;
-                select.appendChild(option);
+                option.addEventListener('click', function() {
+                    document.getElementById('selected-subject-text').textContent = subject;
+                    document.getElementById('subject-selection-modal').classList.add('hidden');
+                });
+                optionsContainer.appendChild(option);
+            });
+            
+            // 绑定选择按钮事件
+            document.getElementById('subject-select-btn').addEventListener('click', function() {
+                document.getElementById('subject-selection-modal').classList.remove('hidden');
             });
         }
         
@@ -708,14 +818,16 @@ Licensed under the MIT License
                 // 保存配置
                 saveClassConfig();
                 
-                // 更新UI
-                generateSubjectSelect();
-                generateStudentNumberButtons();
-                document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
-                updateClassMotto();
-                
+                // 关闭模态框
                 closeConfigModal();
-                alert('配置保存成功！');
+                
+                // 提示用户并准备刷新页面
+                alert('配置保存成功！页面将自动刷新以应用更改。');
+                
+                // 延迟一小段时间后刷新页面，确保用户能看到提示信息
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } catch (error) {
                 alert('配置保存失败：' + error.message);
             }
@@ -747,7 +859,7 @@ Licensed under the MIT License
                 return;
             }
             
-            // 重置数据
+            // 重置内存中的数据
             const maxSections = classConfig.maxClassSections || 8;
             scheduleData = {
                 "周一": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
@@ -761,14 +873,74 @@ Licensed under the MIT License
             homeworkRecords = [];
             selectedStudentNumbers = [];
             
+            // 使用单一事务清除所有数据库数据
+            if (db) {
+                try {
+                    // 使用一个事务处理所有存储对象的清除
+                    const transaction = db.transaction(['schedule', 'homework', 'config'], 'readwrite');
+                    
+                    // 清除所有存储对象
+                    transaction.objectStore('schedule').clear();
+                    transaction.objectStore('homework').clear();
+                    transaction.objectStore('config').clear(); // 清除配置数据
+                    
+                    // 事务完成后更新UI和保存默认配置
+                    transaction.oncomplete = () => {
+                        console.log('所有数据库数据已清除');
+                        
+                        // 重置为默认班级配置
+                        classConfig = {
+                            minStudentId: 1,
+                            maxStudentId: 50,
+                            excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
+                            subjects: ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                            gradeSubjects: {
+                                "初一": ["语文", "数学", "英语", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"]
+                            },
+                            classInfo: {
+                                name: "初一二班",
+                                grade: "初一",
+                                motto: "「以 Glide 之速，结 Plum 之果」"
+                            }
+                        };
+                        
+                        // 保存默认配置
+                        saveClassConfig();
+                        
+                        // 更新UI
+                        updateUIAfterReset();
+                    };
+                    
+                    transaction.onerror = (event) => {
+                        console.error('清除数据库数据失败:', event.target.error);
+                        // 即使出错也更新UI
+                        updateUIAfterReset();
+                    };
+                } catch (error) {
+                    console.error('重置数据库时发生异常:', error);
+                    // 异常情况下也更新UI
+                    updateUIAfterReset();
+                }
+            } else {
+                // 数据库不可用时，直接更新UI
+                updateUIAfterReset();
+            }
+        }
+        
+        // 重置后更新UI的辅助函数
+        function updateUIAfterReset() {
             // 更新UI
+            generateSubjectSelect();
+            generateStudentNumberButtons();
             generateSchedule();
             displayHomeworkRecords();
             updateSelectedNumbersDisplay();
             
-            // 保存到数据库
-            saveScheduleData();
-            saveHomeworkRecords();
+            // 更新页面标题和班训
+            document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
+            updateClassMotto();
             
             alert('所有数据已重置！');
         }
@@ -905,6 +1077,266 @@ Licensed under the MIT License
             }
         }
         
+        // 创建公告弹窗
+        function createAnnouncementModal() {
+            const modal = document.createElement('div');
+            modal.id = 'announcement-modal';
+            modal.className = 'fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="glass-effect rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <div class="p-6 border-b border-white/20 flex justify-between items-center">
+                        <h3 class="text-2xl font-bold text-dark flex items-center gap-2">
+                            <i class="fa fa-bullhorn text-accent"></i>
+                            <span>公告</span>
+                        </h3>
+                        <div id="announcement-timer" class="text-accent font-semibold">5秒后关闭</div>
+                    </div>
+                    <div class="p-8">
+                        <div class="prose max-w-none text-dark">
+                            <h4 class="text-xl font-semibold mb-4 text-gradient">点击我已阅读代表您知晓并同意</h4>
+                            <p class="mb-4">本项目采用MIT开源许可协议于Github发布:</p>
+                            <ul class="list-disc pl-6 mb-4 space-y-2">
+                                <li>您可以自由使用、复制、修改、合并、发布本软件</li>
+                                <li>您可以将本软件用于商业目的</li>
+                                <li>使用本软件时需保留原始许可证声明</li>
+                                <li>您可于Github/DL1447/SLSS中获取新版本</li>
+                                <li>学号选择系统为了适配作者所在班级 默认排除20-30 请于配置中手动更改</li>
+                                <li>二班 On Tooooooooop</li>
+                            </ul>
+                            <p class="text-sm text-gray-600 italic">© 2025 All_lan | MIT License | SLSS</p>
+                        </div>
+                    </div>
+                    <div class="p-6 border-t border-white/20 flex justify-end">
+                        <button id="close-announcement" class="px-6 py-2.5 gradient-border bg-accent hover:bg-accent/90 text-white rounded-lg transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fa fa-check"></i>
+                            <span>我已阅读</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // 倒计时关闭功能
+            const closeButton = document.getElementById('close-announcement');
+            const timerElement = document.getElementById('announcement-timer');
+            let seconds = 5;
+            
+            closeButton.disabled = true;
+            
+            const countdownInterval = setInterval(() => {
+                seconds--;
+                timerElement.textContent = `${seconds}秒后关闭`;
+                
+                if (seconds <= 0) {
+                    clearInterval(countdownInterval);
+                    closeButton.disabled = false;
+                    timerElement.textContent = '点击"我已阅读"关闭';
+                }
+            }, 1000);
+            
+            // 绑定关闭按钮事件
+            closeButton.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+        
+        // 显示公告
+        function showAnnouncement() {
+            // 获取并更新访问次数
+            let visitCount = localStorage.getItem('visitCount');
+            visitCount = visitCount ? parseInt(visitCount) + 1 : 1;
+            localStorage.setItem('visitCount', visitCount.toString());
+            
+            // 每5次访问显示一次公告
+            if (visitCount % 5 === 0) {
+                createAnnouncementModal();
+            }
+        }
+        
+        // Toast提示功能
+        function showToast(message, type = 'info') {
+            // 移除已存在的Toast
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-notification fixed bottom-6 left-1/2 transform -translate-x-1/2 glass-effect rounded-xl px-6 py-3 text-white z-50 transition-all duration-300 shadow-lg ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-primary'}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // 显示动画
+            setTimeout(() => {
+                toast.classList.add('opacity-100');
+            }, 10);
+            
+            // 3秒后自动关闭
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+        
+        // 有趣的事实数据
+        const funFacts = [
+            "研究表明，老师的反馈对学生的学习成绩有显著影响。",
+            "在课堂上使用积极的语言可以提高学生参与度。",
+            "记录学生表现是教师专业发展的重要部分。",
+            "数据显示，及时的课后复习可以将记忆保留率提高30%。",
+            "教学反思有助于提高教师的教学效果。",
+            "每个学生的学习节奏都是独特的。",
+            "鼓励学生提问可以培养批判性思维能力。",
+            "良好的学习环境可以提高注意力集中度。",
+            "定期评估是了解学生学习情况的有效途径。",
+            "个性化的学习计划有助于学生发挥潜力。",
+            "互动教学比单向讲授更能提高学习效果。",
+            "学生的自信心对学习成绩有重要影响。",
+            "思维导图是组织知识点的有效工具。",
+            "及时纠正错误比反复练习更重要。",
+            "鼓励合作学习可以培养团队精神。",
+            "学习新技能时，短时间、高频率的练习比长时间、低频率的练习更有效。",
+            "情绪状态会直接影响记忆和学习效果。",
+            "教授他人是巩固知识的最佳方法之一。",
+            "视觉辅助工具可以提高信息记忆效率高达65%。",
+            "学习过程中的适当休息有助于知识的巩固和整合。",
+            "设置明确的学习目标可以提高学习动力和效率。",
+            "将学习内容与个人经验联系起来可以增强记忆。",
+            "多样化的教学方法可以满足不同学习者的需求。",
+            "正面强化比负面批评更能促进学生的进步。",
+            "培养成长型思维模式有助于学生应对学习挑战。",
+            "学习环境中的背景音乐可以提高某些类型任务的效率。",
+            "手写笔记比打字笔记更有助于信息的理解和记忆。",
+            "实践应用是将理论知识转化为技能的关键步骤。",
+            "定期回顾已学知识可以防止遗忘。",
+            "培养学生的创造力比单纯传授知识更重要。",
+            "学生之间的同伴学习可以相互促进成长。",
+            "合理安排学习时间可以避免认知疲劳。",
+            "给予具体、建设性的反馈比笼统评价更有价值。",
+            "建立学习习惯比临时突击学习更有效。",
+            "培养批判性阅读能力是信息时代的重要技能。",
+            "学习中的挫折体验是成长的重要组成部分。",
+            "将复杂任务分解为小步骤可以降低学习难度。",
+            "学习成果的及时反馈可以调整学习策略。",
+            "培养自我管理能力是终身学习的基础。",
+            "跨学科学习可以拓宽思维视野。",
+            "保持好奇心是持续学习的内在动力。",
+            "设定合理的期望值有助于保持学习积极性。",
+            "学习过程中的社交互动可以增强学习体验。",
+            "识别个人的学习风格有助于选择合适的学习方法。",
+            "将学习与实际生活联系可以提高学习兴趣。",
+            "培养解决问题的能力比记忆事实更重要。",
+            "学习中的成就感是持续学习的重要动力。",
+            "保持身心健康有助于提高学习效率。",
+            "培养良好的阅读习惯可以提高理解能力。",
+            "参与讨论可以深化对知识的理解。",
+            "记录学习过程中的问题有助于深入思考。",
+            "学习新知识时复习旧知识可以建立知识体系。",
+            "培养专注力是提高学习效率的关键。",
+            "学习中的错误是学习过程的自然组成部分。",
+            "合理利用学习资源可以提高学习效果。",
+            "培养时间管理能力有助于平衡学习和生活。",
+            "学习目标的实现需要持续的努力和坚持。",
+            "了解学习的内在价值比追求外部奖励更重要。",
+            "培养学习的自主性有助于终身学习。",
+            "多角度思考问题可以培养创造性思维。",
+            "学习中的合作与竞争都可以促进进步。",
+            "保持学习的乐趣是长期学习的基础。",
+            "培养表达能力有助于知识的内化和输出。",
+            "学会提问比寻找答案更重要。",
+            "学习环境的整洁和有序可以提高学习效率。",
+            "培养自我评估能力有助于调整学习策略。",
+            "学习中的模仿和创新都是重要的学习方式。",
+            "保持对学习内容的兴趣可以提高学习动力。",
+            "培养毅力和韧性有助于克服学习困难。",
+            "将学习视为一种享受而非负担可以提高学习效果。",
+            "学习中的反思和总结有助于知识的整合。",
+            "培养倾听能力是有效学习的重要组成部分。",
+            "学习中的灵活性有助于应对不同的学习挑战。",
+            "建立学习社区可以相互支持和促进。",
+            "培养元认知能力有助于监控和调整学习过程。",
+            "学习中的耐心和坚持是取得进步的关键。",
+            "将学习内容可视化可以增强理解和记忆。",
+            "保持开放的心态有助于接受新的知识和观点。",
+            "学习中的实践和反思相结合可以加深理解。",
+            "培养独立思考能力是批判性思维的基础。",
+            "学习中的合作可以培养团队精神和沟通能力。",
+            "保持学习的持续性比短期的高强度学习更有效。",
+            "学习中的自我激励是长期学习的重要动力。",
+            "培养阅读速度和理解力可以提高学习效率。",
+            "学习中的专注和放松需要平衡。",
+            "将学习与兴趣爱好结合可以提高学习积极性。",
+            "培养解决问题的策略比记忆解决方法更重要。",
+            "学习中的成就感可以增强学习的自信心。",
+            "保持学习的好奇心和探索精神有助于持续学习。",
+            "培养组织信息的能力有助于知识的管理和应用。",
+            "学习中的错误是改进和成长的机会。",
+            "建立学习计划可以提高学习的系统性和效率。",
+            "培养批判性思维能力有助于独立判断和决策。",
+            "学习中的观察和思考是获取知识的重要途径。",
+            "保持学习的热情和动力是终身学习的基础。",
+            "培养适应变化的能力有助于应对未来的挑战。",
+            "学习中的交流和分享可以拓宽视野和加深理解。",
+            "将学习内容应用到实际问题中可以增强实用性。",
+            "培养学习的专注力和毅力是取得成功的关键。",
+            "保持身心健康是有效学习的基础条件。",
+            "培养自我调节能力有助于管理学习压力。",
+            "学习中的创新思维可以推动知识的发展。",
+            "建立学习档案可以追踪学习进度和成果。",
+            "培养评价信息的能力是信息时代的重要技能。",
+            "学习中的团队合作可以提高解决问题的效率。",
+            "保持学习的开放性和包容性有助于多元思维的发展。",
+            "培养终身学习的意识是适应社会发展的需要。",
+            "学习中的自主探索可以培养创新能力。",
+            "将学习视为一种成长而非竞争可以减轻学习压力。",
+            "培养学习的责任感有助于主动学习。",
+            "学习中的实验和尝试可以发现新的学习方法。",
+            "保持学习的节奏和规律可以提高学习效率。",
+            "培养表达和沟通能力有助于知识的传播和应用。",
+            "学习中的目标设定和执行是取得成果的重要步骤。",
+            "保持学习的乐趣和好奇心是持续学习的动力源泉。"
+        ];
+        
+        let countdownInterval = null;
+        let countdownSeconds = 60;
+        
+        // 随机显示一个有趣的事实
+        function showRandomFunFact() {
+            const randomIndex = Math.floor(Math.random() * funFacts.length);
+            document.getElementById('fun-fact-content').textContent = funFacts[randomIndex];
+            
+            // 重置倒计时
+            resetCountdown();
+        }
+        
+        // 重置倒计时
+        function resetCountdown() {
+            clearInterval(countdownInterval);
+            countdownSeconds = 60;
+            document.getElementById('countdown').textContent = countdownSeconds;
+            
+            // 开始新的倒计时
+            countdownInterval = setInterval(() => {
+                countdownSeconds--;
+                document.getElementById('countdown').textContent = countdownSeconds;
+                
+                if (countdownSeconds <= 0) {
+                    showRandomFunFact();
+                }
+            }, 1000);
+        }
+        
+        // 初始化"你知道吗"栏目
+        function initFunFactSection() {
+            // 显示第一个事实
+            showRandomFunFact();
+            
+            // 绑定手动刷新按钮
+            document.getElementById('fun-fact-refresh').addEventListener('click', showRandomFunFact);
+        }
+        
         // 初始化页面
         document.addEventListener('DOMContentLoaded', async function() {
             // 显示加载动画
@@ -917,9 +1349,9 @@ Licensed under the MIT License
                 // 确保classConfig包含gradeSubjects配置
                 if (!classConfig.gradeSubjects) {
                     classConfig.gradeSubjects = {
-                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治"],
-                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治"],
-                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治"]
+                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治", "生物", "体育", "心理", "信息"],
+                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治", "生物", "体育", "心理", "信息"],
+                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治", "生物", "体育", "心理", "信息"]
                     };
                 }
                 
@@ -968,6 +1400,9 @@ Licensed under the MIT License
                 // 添加配置按钮和导入功能
                 addConfigAndImportFeatures();
                 
+                // 初始化"你知道吗"栏目
+                initFunFactSection();
+                
                 // 注册Service Worker
                 if ('serviceWorker' in navigator) {
                     window.addEventListener('load', () => {
@@ -986,6 +1421,8 @@ Licensed under the MIT License
                 // 隐藏加载动画
                 setTimeout(() => {
                     hideLoader();
+                    // 加载完成后显示公告
+                    showAnnouncement();
                 }, 500); // 短暂延迟，确保用户能看到加载过程
             }
         });
@@ -1171,31 +1608,111 @@ function updateCurrentDate() {
             });
         }
         
-        // 编辑课程节数
-        function editSectionNumber(courseId) {
-            const newNumber = prompt('请输入新的课程节数:', courseId);
-            if (newNumber === null) return;
+        // 创建课程节数编辑模态框
+        function createSectionNumberModal(courseId) {
+            // 移除已存在的模态框
+            const existingModal = document.getElementById('section-number-modal');
+            if (existingModal) existingModal.remove();
             
-            const number = parseInt(newNumber);
+            const modal = document.createElement('div');
+            modal.id = 'section-number-modal';
+            modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="glass-effect rounded-2xl w-full max-w-md">
+                    <div class="p-6 border-b border-white/20">
+                        <h2 class="text-xl font-bold text-dark">修改课程节数</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="section-number-input" class="block text-sm font-medium text-gray-700 mb-2">请输入新的课程节数</label>
+                                <input 
+                                    type="number" 
+                                    id="section-number-input" 
+                                    value="${courseId}"
+                                    min="1"
+                                    max="99"
+                                    class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                                    placeholder="1-99之间的数字"
+                                >
+                            </div>
+                            <div class="flex gap-3">
+                                <button id="section-number-cancel" class="flex-1 px-4 py-3 glass-effect border border-white/30 rounded-xl hover:bg-gray-200/20 transition-all duration-300">
+                                    取消
+                                </button>
+                                <button id="section-number-confirm" class="flex-1 px-4 py-3 gradient-border bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 hover:shadow-lg">
+                                    确认
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // 绑定事件
+            const cancelBtn = document.getElementById('section-number-cancel');
+            const confirmBtn = document.getElementById('section-number-confirm');
+            const input = document.getElementById('section-number-input');
+            
+            // 自动聚焦输入框
+            input.focus();
+            input.select();
+            
+            // 取消按钮事件
+            cancelBtn.addEventListener('click', () => {
+                modal.remove();
+            });
+            
+            // 确认按钮事件
+            confirmBtn.addEventListener('click', () => {
+                const number = parseInt(input.value);
+                handleSectionNumberUpdate(courseId, number);
+                modal.remove();
+            });
+            
+            // 回车键确认
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const number = parseInt(input.value);
+                    handleSectionNumberUpdate(courseId, number);
+                    modal.remove();
+                }
+            });
+        }
+        
+        // 处理课程节数更新
+        function handleSectionNumberUpdate(courseId, number) {
             if (isNaN(number) || number < 1 || number > 99) {
-                alert('请输入有效的课程节数（1-99）！');
+                showToast('请输入有效的课程节数（1-99）！', 'error');
                 return;
             }
             
             // 检查是否重复
             const courses = scheduleData[currentDay];
             if (courses.some(c => c.id !== courseId && c.id === number)) {
-                alert('该课程节数已存在！');
+                showToast('该课程节数已存在！', 'error');
                 return;
             }
             
             // 更新课程节数
-            const course = courses.find(c => c.id === courseId);
-            if (course) {
-                course.id = number;
+            const courseIndex = courses.findIndex(c => c.id === courseId);
+            if (courseIndex !== -1) {
+                courses[courseIndex].id = number;
+                
+                // 按节数排序
+                scheduleData[currentDay].sort((a, b) => a.id - b.id);
+                
                 saveScheduleData();
                 generateSchedule();
+                showToast('课程节数已更新！', 'success');
             }
+        }
+        
+        // 编辑课程节数
+        function editSectionNumber(courseId) {
+            createSectionNumberModal(courseId);
         }
         
         // 创建课程项
@@ -1280,6 +1797,7 @@ function updateCurrentDate() {
                                 <div class="mt-2">
                                     <label class="block text-xs text-gray-500 mb-1">快速选择理由：</label>
                                     <div class="flex flex-wrap gap-2">
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="无" data-layer="1">无</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="上课说话" data-layer="1">上课说话</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="睡觉" data-layer="1">睡觉</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="不记笔记" data-layer="1">不记笔记</button>
@@ -1297,6 +1815,7 @@ function updateCurrentDate() {
                                 <div class="mt-2">
                                     <label class="block text-xs text-gray-500 mb-1">快速选择理由：</label>
                                     <div class="flex flex-wrap gap-2">
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="无" data-layer="2">无</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="上课说话" data-layer="2">上课说话</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="睡觉" data-layer="2">睡觉</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="不记笔记" data-layer="2">不记笔记</button>
@@ -1314,6 +1833,7 @@ function updateCurrentDate() {
                                 <div class="mt-2">
                                     <label class="block text-xs text-gray-500 mb-1">快速选择理由：</label>
                                     <div class="flex flex-wrap gap-2">
+                                        <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="无" data-layer="3">无</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="上课说话" data-layer="3">上课说话</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="睡觉" data-layer="3">睡觉</button>
                                         <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="不记笔记" data-layer="3">不记笔记</button>
@@ -1333,6 +1853,7 @@ function updateCurrentDate() {
                         <div class="mt-2">
                             <label class="block text-xs text-gray-500 mb-1">快速选择理由：</label>
                             <div class="flex flex-wrap gap-2">
+                                <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="无">无</button>
                                 <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="上课说话">上课说话</button>
                                 <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="睡觉">睡觉</button>
                                 <button class="quick-reason-btn px-2 py-0.5 glass-effect border border-white/30 rounded-lg text-xs hover:bg-primary/10 transition-all duration-300" data-id="${course.id}" data-reason="不记笔记">不记笔记</button>
@@ -1347,7 +1868,7 @@ function updateCurrentDate() {
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">表现不佳学生</label>
                     <div class="mb-2">
-                        <div id="course-students-${course.id}" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-hide p-2 glass-effect border border-white/30 rounded-lg min-h-[60px]">
+                        <div id="course-students-${course.id}" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto ios-scrollbar p-2 glass-effect border border-white/30 rounded-lg min-h-[60px]">
                             ${course.poorStudents ? course.poorStudents.map(num => `
                                 <div class="inline-flex items-center glass-effect border border-white/30 bg-danger/20 text-danger px-2 py-1 rounded-full text-xs hover-lift transition-all duration-300">
                                     ${num} <span class="ml-1 cursor-pointer remove-poor-student" data-number="${num}">&times;</span>
@@ -1998,9 +2519,120 @@ function updateCurrentDate() {
                 });
             });
             
+            // 创建自定义科目模态框
+            function createCustomSubjectModal() {
+                const modal = document.createElement('div');
+                modal.id = 'custom-subject-modal';
+                modal.className = 'fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4';
+                modal.innerHTML = `
+                    <div class="glass-effect rounded-2xl w-full max-w-md p-6">
+                        <div class="p-4 border-b border-white/20 mb-4">
+                            <h2 class="text-xl font-bold text-dark">自定义科目</h2>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="custom-subject-input" class="block text-sm font-medium text-gray-700 mb-2">请输入科目名称</label>
+                                <input 
+                                    type="text" 
+                                    id="custom-subject-input" 
+                                    class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                                    placeholder="例如：科技、综合实践等"
+                                >
+                            </div>
+                            <div class="flex gap-3">
+                                <button id="custom-subject-cancel" class="flex-1 px-4 py-3 glass-effect border border-white/30 rounded-xl hover:bg-gray-200/20 transition-all duration-300">
+                                    取消
+                                </button>
+                                <button id="custom-subject-confirm" class="flex-1 px-4 py-3 gradient-border bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 hover:shadow-lg">
+                                    确认
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // 添加事件监听
+                document.getElementById('custom-subject-cancel').addEventListener('click', function() {
+                    modal.classList.add('hidden');
+                    document.getElementById('custom-subject-input').value = '';
+                });
+            }
+            
+            // 创建自定义科目模态框
+            createCustomSubjectModal();
+            
             // 添加未交作业记录
             document.getElementById('add-homework-record').addEventListener('click', function() {
-                const subject = document.getElementById('subject-select').value;
+                let subject = document.getElementById('selected-subject-text').textContent;
+                
+                // 检查是否已选择科目
+                if (subject === '请选择科目') {
+                    showToast('请先选择科目！', 'error');
+                    return;
+                }
+                
+                // 处理自定义科目
+                if (subject === '自定义') {
+                    // 显示毛玻璃模态框
+                    const modal = document.getElementById('custom-subject-modal');
+                    modal.classList.remove('hidden');
+                    
+                    // 保存当前选中的学生
+                    const currentSelectedStudents = [...selectedStudentNumbers];
+                    
+                    // 重新绑定确认按钮事件，避免多次绑定
+                    const confirmBtn = document.getElementById('custom-subject-confirm');
+                    const newConfirmHandler = function() {
+                        subject = document.getElementById('custom-subject-input').value;
+                        if (!subject || subject.trim() === '') {
+                            alert('科目名称不能为空');
+                            return;
+                        }
+                        
+                        // 关闭模态框
+                        modal.classList.add('hidden');
+                        document.getElementById('custom-subject-input').value = '';
+                        
+                        // 移除事件监听器
+                        confirmBtn.removeEventListener('click', newConfirmHandler);
+                        
+                        // 继续添加记录的逻辑
+                        if (currentSelectedStudents.length === 0) {
+                            alert('请至少选择一名未交作业的学生');
+                            return;
+                        }
+                        
+                        const record = {
+                            id: Date.now(),
+                            subject: subject,
+                            students: [...currentSelectedStudents],
+                            date: new Date().toLocaleDateString('zh-CN')
+                        };
+                        
+                        homeworkRecords.push(record);
+                        displayHomeworkRecords();
+                        // 保存到 IndexedDB
+                        saveHomeworkRecords();
+                        
+                        // 清空选择
+                        currentSelectedStudents.forEach(number => {
+                            const button = document.querySelector(`.student-number-btn[data-number="${number}"]`);
+                            if (button) button.classList.remove('bg-primary/20', 'border-primary');
+                        });
+                        selectedStudentNumbers = [];
+                        updateSelectedNumbersDisplay();
+                    };
+                    
+                    // 移除之前的事件监听器并添加新的
+                    confirmBtn.removeEventListener('click', confirmBtn._lastHandler);
+                    confirmBtn.addEventListener('click', newConfirmHandler);
+                    confirmBtn._lastHandler = newConfirmHandler;
+                    
+                    // 防止默认提交
+                    return false;
+                }
+                
                 if (selectedStudentNumbers.length === 0) {
                     alert('请至少选择一名未交作业的学生');
                     return;
@@ -2094,41 +2726,78 @@ function updateCurrentDate() {
             // 创建工作簿
             const wb = XLSX.utils.book_new();
             
-            // 准备课程数据
-            const scheduleDataForExcel = [];
-            Object.keys(scheduleData).forEach(day => {
-                scheduleData[day].forEach(course => {
-                    if (course.subject) { // 只导出有数据的课程
-                        // 检查是否是分层科目（数学或英语）
-                        if (course.subject === '数学' || course.subject === '英语') {
-                            // 为每个分层单独创建一行数据
-                            for (let layer = 1; layer <= 3; layer++) {
-                                const layerKey = `layer${layer}`;
-                                scheduleDataForExcel.push({
-                                    '星期': day,
-                                    '课时': course.id,
-                                    '科目': `${course.subject}(${layer}班)`,
-                                    '评分': course.layerRatings?.[layerKey] || 0,
-                                    '课堂不足及建议': course.layerNotes?.[layerKey] || '',
-                                    '表现不佳学生学号': course.poorStudents?.join(', ') || ''
-                                });
-                            }
-                        } else {
-                            // 普通科目保持原有逻辑
-                            scheduleDataForExcel.push({
-                                '星期': day,
-                                '课时': course.id,
-                                '科目': course.subject,
-                                '评分': course.rating,
-                                '课堂不足及建议': course.notes,
-                                '表现不佳学生学号': course.poorStudents?.join(', ') || ''
-                            });
+            // 准备课程数据 - 每天一列的格式
+            // 获取最大课时数
+            const daysOfWeek = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+            let maxCourseId = 0;
+            daysOfWeek.forEach(day => {
+                if (scheduleData[day]) {
+                    scheduleData[day].forEach(course => {
+                        if (course.id > maxCourseId) {
+                            maxCourseId = course.id;
                         }
-                    }
-                });
+                    });
+                }
             });
             
-            // 准备未交作业数据
+            // 创建二维数组表示表格
+            // 第一行为标题行
+            const scheduleSheetData = [['课时']];
+            
+            // 添加星期作为列标题
+            daysOfWeek.forEach(day => {
+                scheduleSheetData[0].push(day);
+            });
+            
+            // 为每个课时创建一行
+            for (let courseId = 1; courseId <= maxCourseId; courseId++) {
+                const row = [courseId];
+                
+                // 为每天添加对应的课程信息
+                daysOfWeek.forEach(day => {
+                    const course = scheduleData[day]?.find(c => c.id === courseId);
+                    if (course && course.subject) {
+                        // 检查是否是分层科目（数学或英语）
+                        if (course.subject === '数学' || course.subject === '英语') {
+                            // 分层科目处理
+                            let content = '';
+                            for (let layer = 1; layer <= 3; layer++) {
+                                const layerKey = `layer${layer}`;
+                                const layerRating = course.layerRatings?.[layerKey] || 0;
+                                const layerNotes = course.layerNotes?.[layerKey] || '';
+                                
+                                if (layerRating > 0 || layerNotes) {
+                                    content += `${course.subject}(${layer}班)\n评分: ${layerRating}\n`;
+                                    if (layerNotes) {
+                                        content += `建议: ${layerNotes}\n`;
+                                    }
+                                }
+                            }
+                            // 添加表现不佳的学生
+                            if (course.poorStudents && course.poorStudents.length > 0) {
+                                content += `不佳学生: ${course.poorStudents.join(', ')}`;
+                            }
+                            row.push(content.trim() || course.subject);
+                        } else {
+                            // 普通科目
+                            let content = `${course.subject}\n评分: ${course.rating}\n`;
+                            if (course.notes) {
+                                content += `建议: ${course.notes}\n`;
+                            }
+                            if (course.poorStudents && course.poorStudents.length > 0) {
+                                content += `不佳学生: ${course.poorStudents.join(', ')}`;
+                            }
+                            row.push(content.trim());
+                        }
+                    } else {
+                        row.push(''); // 空单元格
+                    }
+                });
+                
+                scheduleSheetData.push(row);
+            }
+            
+            // 准备未交作业数据（保持原有格式）
             const homeworkDataForExcel = [];
             homeworkRecords.forEach(record => {
                 record.students.forEach(student => {
@@ -2141,8 +2810,9 @@ function updateCurrentDate() {
             });
             
             // 创建工作表
-            if (scheduleDataForExcel.length > 0) {
-                const wsSchedule = XLSX.utils.json_to_sheet(scheduleDataForExcel);
+            // 课程表现表使用二维数组直接创建
+            if (scheduleSheetData.length > 1) { // 确保有数据行
+                const wsSchedule = XLSX.utils.aoa_to_sheet(scheduleSheetData);
                 XLSX.utils.book_append_sheet(wb, wsSchedule, '课程表现');
             }
             
