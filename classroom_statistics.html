@@ -282,17 +282,23 @@ Licensed under the MIT License
             <div class="p-5 border-b border-white/20 flex justify-between items-center">
                 <h3 class="text-xl font-semibold text-dark flex items-center gap-2">
                     <i class="fa fa-lightbulb-o text-warning animate-pulse-slow"></i>
-                    你知道吗？（我不知道）
+                    你知道吗？
                 </h3>
                 <button id="fun-fact-refresh" class="gradient-border bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg">
                     <i class="fa fa-refresh"></i>
-                    <span>刷新</span>
+                    <span>查看新知识</span>
                 </button>
             </div>
             <div class="p-6">
-                <p id="fun-fact-content" class="text-gray-700 text-lg leading-relaxed"></p>
-                <div class="mt-4 text-right">
-                    <span id="fact-refresh-timer" class="text-sm text-gray-500">下次刷新: <span id="countdown">60</span>秒</span>
+                <div class="glass-effect-dark text-white p-6 rounded-xl mb-4 transition-all duration-300 hover:shadow-lg">
+                    <p id="fun-fact-content" class="text-lg leading-relaxed"></p>
+                </div>
+                <div class="mt-4 text-right flex justify-between items-center">
+                    <span class="text-sm text-gray-600 italic">点击上方按钮获取新知识，或等待自动刷新</span>
+                    <span id="fact-refresh-timer" class="text-sm text-gray-500 flex items-center gap-1">
+                        <i class="fa fa-clock-o"></i>
+                        <span>下次刷新: <span id="countdown">60</span>秒</span>
+                    </span>
                 </div>
             </div>
         </div>
@@ -652,9 +658,9 @@ Licensed under the MIT License
                             document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
                         }
                         
-                        alert('数据导入成功！');
+                        showToast('数据导入成功！', 'success');
                     } catch (error) {
-                        alert('数据导入失败：文件格式错误或内容无效');
+                        showToast('数据导入失败：文件格式错误或内容无效', 'error');
                     }
                     
                     // 重置文件输入
@@ -1160,13 +1166,52 @@ Licensed under the MIT License
             const existingToast = document.querySelector('.toast-notification');
             if (existingToast) existingToast.remove();
             
+            // 确保Toast样式已添加
+            if (!document.querySelector('#toast-styles')) {
+                const style = document.createElement('style');
+                style.id = 'toast-styles';
+                style.textContent = `
+                    .toast-notification {
+                        opacity: 0;
+                        transform: translateX(-50%) translateY(20px);
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                        font-weight: 500;
+                        border: 2px solid rgba(255, 255, 255, 0.3);
+                        animation: toastSlideIn 0.3s ease-out forwards;
+                    }
+                    
+                    .toast-notification.opacity-100 {
+                        opacity: 1;
+                        transform: translateX(-50%) translateY(0);
+                    }
+                    
+                    .toast-notification.opacity-0 {
+                        opacity: 0;
+                        transform: translateX(-50%) translateY(20px);
+                    }
+                    
+                    @keyframes toastSlideIn {
+                        from {
+                            opacity: 0;
+                            transform: translateX(-50%) translateY(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateX(-50%) translateY(0);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
             const toast = document.createElement('div');
-            toast.className = `toast-notification fixed bottom-6 left-1/2 transform -translate-x-1/2 glass-effect rounded-xl px-6 py-3 text-white z-50 transition-all duration-300 shadow-lg ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-primary'}`;
+            // 移除glass-effect，使用不透明的纯色背景以提高对比度
+            toast.className = `toast-notification fixed bottom-12 left-1/2 transform -translate-x-1/2 rounded-xl px-6 py-4 text-white z-50 transition-all duration-300 shadow-lg ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-primary'}`;
             toast.textContent = message;
             
             document.body.appendChild(toast);
             
-            // 显示动画
+            // 显示动画已通过CSS实现
             setTimeout(() => {
                 toast.classList.add('opacity-100');
             }, 10);
@@ -1180,123 +1225,103 @@ Licensed under the MIT License
             }, 3000);
         }
         
-        // 有趣的事实数据
+        // 有趣的事实数据 - 优化版（移除重复内容并扩充新知识）
         const funFacts = [
-            "研究表明，老师的反馈对学生的学习成绩有显著影响。",
-            "在课堂上使用积极的语言可以提高学生参与度。",
-            "记录学生表现是教师专业发展的重要部分。",
-            "数据显示，及时的课后复习可以将记忆保留率提高30%。",
-            "教学反思有助于提高教师的教学效果。",
-            "每个学生的学习节奏都是独特的。",
-            "鼓励学生提问可以培养批判性思维能力。",
-            "良好的学习环境可以提高注意力集中度。",
-            "定期评估是了解学生学习情况的有效途径。",
-            "个性化的学习计划有助于学生发挥潜力。",
-            "互动教学比单向讲授更能提高学习效果。",
-            "学生的自信心对学习成绩有重要影响。",
-            "思维导图是组织知识点的有效工具。",
-            "及时纠正错误比反复练习更重要。",
-            "鼓励合作学习可以培养团队精神。",
-            "学习新技能时，短时间、高频率的练习比长时间、低频率的练习更有效。",
-            "情绪状态会直接影响记忆和学习效果。",
-            "教授他人是巩固知识的最佳方法之一。",
-            "视觉辅助工具可以提高信息记忆效率高达65%。",
-            "学习过程中的适当休息有助于知识的巩固和整合。",
-            "设置明确的学习目标可以提高学习动力和效率。",
-            "将学习内容与个人经验联系起来可以增强记忆。",
-            "多样化的教学方法可以满足不同学习者的需求。",
-            "正面强化比负面批评更能促进学生的进步。",
-            "培养成长型思维模式有助于学生应对学习挑战。",
-            "学习环境中的背景音乐可以提高某些类型任务的效率。",
-            "手写笔记比打字笔记更有助于信息的理解和记忆。",
-            "实践应用是将理论知识转化为技能的关键步骤。",
-            "定期回顾已学知识可以防止遗忘。",
-            "培养学生的创造力比单纯传授知识更重要。",
-            "学生之间的同伴学习可以相互促进成长。",
-            "合理安排学习时间可以避免认知疲劳。",
-            "给予具体、建设性的反馈比笼统评价更有价值。",
-            "建立学习习惯比临时突击学习更有效。",
-            "培养批判性阅读能力是信息时代的重要技能。",
-            "学习中的挫折体验是成长的重要组成部分。",
-            "将复杂任务分解为小步骤可以降低学习难度。",
-            "学习成果的及时反馈可以调整学习策略。",
-            "培养自我管理能力是终身学习的基础。",
-            "跨学科学习可以拓宽思维视野。",
-            "保持好奇心是持续学习的内在动力。",
-            "设定合理的期望值有助于保持学习积极性。",
-            "学习过程中的社交互动可以增强学习体验。",
-            "识别个人的学习风格有助于选择合适的学习方法。",
-            "将学习与实际生活联系可以提高学习兴趣。",
-            "培养解决问题的能力比记忆事实更重要。",
-            "学习中的成就感是持续学习的重要动力。",
-            "保持身心健康有助于提高学习效率。",
-            "培养良好的阅读习惯可以提高理解能力。",
-            "参与讨论可以深化对知识的理解。",
-            "记录学习过程中的问题有助于深入思考。",
-            "学习新知识时复习旧知识可以建立知识体系。",
-            "培养专注力是提高学习效率的关键。",
-            "学习中的错误是学习过程的自然组成部分。",
-            "合理利用学习资源可以提高学习效果。",
-            "培养时间管理能力有助于平衡学习和生活。",
-            "学习目标的实现需要持续的努力和坚持。",
-            "了解学习的内在价值比追求外部奖励更重要。",
-            "培养学习的自主性有助于终身学习。",
-            "多角度思考问题可以培养创造性思维。",
-            "学习中的合作与竞争都可以促进进步。",
-            "保持学习的乐趣是长期学习的基础。",
-            "培养表达能力有助于知识的内化和输出。",
-            "学会提问比寻找答案更重要。",
-            "学习环境的整洁和有序可以提高学习效率。",
-            "培养自我评估能力有助于调整学习策略。",
-            "学习中的模仿和创新都是重要的学习方式。",
-            "保持对学习内容的兴趣可以提高学习动力。",
-            "培养毅力和韧性有助于克服学习困难。",
-            "将学习视为一种享受而非负担可以提高学习效果。",
-            "学习中的反思和总结有助于知识的整合。",
-            "培养倾听能力是有效学习的重要组成部分。",
-            "学习中的灵活性有助于应对不同的学习挑战。",
-            "建立学习社区可以相互支持和促进。",
-            "培养元认知能力有助于监控和调整学习过程。",
-            "学习中的耐心和坚持是取得进步的关键。",
-            "将学习内容可视化可以增强理解和记忆。",
-            "保持开放的心态有助于接受新的知识和观点。",
-            "学习中的实践和反思相结合可以加深理解。",
-            "培养独立思考能力是批判性思维的基础。",
-            "学习中的合作可以培养团队精神和沟通能力。",
-            "保持学习的持续性比短期的高强度学习更有效。",
-            "学习中的自我激励是长期学习的重要动力。",
-            "培养阅读速度和理解力可以提高学习效率。",
-            "学习中的专注和放松需要平衡。",
-            "将学习与兴趣爱好结合可以提高学习积极性。",
-            "培养解决问题的策略比记忆解决方法更重要。",
-            "学习中的成就感可以增强学习的自信心。",
-            "保持学习的好奇心和探索精神有助于持续学习。",
-            "培养组织信息的能力有助于知识的管理和应用。",
-            "学习中的错误是改进和成长的机会。",
-            "建立学习计划可以提高学习的系统性和效率。",
-            "培养批判性思维能力有助于独立判断和决策。",
-            "学习中的观察和思考是获取知识的重要途径。",
-            "保持学习的热情和动力是终身学习的基础。",
-            "培养适应变化的能力有助于应对未来的挑战。",
-            "学习中的交流和分享可以拓宽视野和加深理解。",
-            "将学习内容应用到实际问题中可以增强实用性。",
-            "培养学习的专注力和毅力是取得成功的关键。",
-            "保持身心健康是有效学习的基础条件。",
-            "培养自我调节能力有助于管理学习压力。",
-            "学习中的创新思维可以推动知识的发展。",
-            "建立学习档案可以追踪学习进度和成果。",
-            "培养评价信息的能力是信息时代的重要技能。",
-            "学习中的团队合作可以提高解决问题的效率。",
-            "保持学习的开放性和包容性有助于多元思维的发展。",
-            "培养终身学习的意识是适应社会发展的需要。",
-            "学习中的自主探索可以培养创新能力。",
-            "将学习视为一种成长而非竞争可以减轻学习压力。",
-            "培养学习的责任感有助于主动学习。",
-            "学习中的实验和尝试可以发现新的学习方法。",
-            "保持学习的节奏和规律可以提高学习效率。",
-            "培养表达和沟通能力有助于知识的传播和应用。",
-            "学习中的目标设定和执行是取得成果的重要步骤。",
-            "保持学习的乐趣和好奇心是持续学习的动力源泉。"
+            // 学习科学与认知
+            "研究表明，老师的反馈对学生的学习成绩有显著影响，及时且具体的反馈可提高学习效率达40%。",
+            "在课堂上使用积极的语言可以提高学生参与度，减少课堂行为问题。",
+            "记录学生表现是教师专业发展的重要部分，有助于个性化教学调整。",
+            "数据显示，及时的课后复习可以将记忆保留率提高30%，而延迟一天复习效果会显著下降。",
+            "教学反思有助于提高教师的教学效果，特别是结合学生反馈的反思。",
+            "每个学生的学习节奏都是独特的，视觉型学习者约占65%，听觉型约占30%，动觉型约占5%。",
+            "鼓励学生提问可以培养批判性思维能力，提问过程本身就是深度思考的体现。",
+            "良好的学习环境可以提高注意力集中度，研究发现整洁环境能提高专注力达25%。",
+            "定期评估是了解学生学习情况的有效途径，形成性评估比总结性评估更有助于学习。",
+            "个性化的学习计划有助于学生发挥潜力，适应不同学习风格的教学可提高学习效果。",
+            
+            // 记忆与学习技巧
+            "互动教学比单向讲授更能提高学习效果，学生参与度与知识保留率正相关。",
+            "学生的自信心对学习成绩有重要影响，成长型思维模式的学生更容易面对挑战。",
+            "思维导图是组织知识点的有效工具，能将记忆效率提高约25%。",
+            "及时纠正错误比反复练习更重要，识别错误模式是深度学习的关键。",
+            "鼓励合作学习可以培养团队精神，同伴教学效应可同时提升双方的学习效果。",
+            "学习新技能时，短时间、高频率的练习比长时间、低频率的练习更有效，这被称为分散学习效应。",
+            "情绪状态会直接影响记忆和学习效果，适度的积极情绪能提高记忆编码效率。",
+            "教授他人是巩固知识的最佳方法之一，这种学习方法被称为'费曼学习法'，可将知识保留率提高到90%。",
+            "视觉辅助工具可以提高信息记忆效率高达65%，图文结合的学习材料效果最佳。",
+            "学习过程中的适当休息有助于知识的巩固和整合，番茄工作法(25分钟学习+5分钟休息)被证明非常有效。",
+            
+            // 学习策略
+            "设置明确的学习目标可以提高学习动力和效率，SMART目标(具体、可衡量、可实现、相关性、时限)特别有效。",
+            "将学习内容与个人经验联系起来可以增强记忆，这在认知心理学中称为'编码特异性原则'。",
+            "多样化的教学方法可以满足不同学习者的需求，多感官学习能激活大脑多个区域，加深记忆。",
+            "正面强化比负面批评更能促进学生的进步，积极反馈能增强学习动机和自信心。",
+            "培养成长型思维模式有助于学生应对学习挑战，相信能力可以通过努力提升的学生更容易取得进步。",
+            "学习环境中的背景音乐可以提高某些类型任务的效率，巴洛克音乐(60BPM)有助于提高专注力。",
+            "手写笔记比打字笔记更有助于信息的理解和记忆，因为手写过程需要更多的认知参与。",
+            "实践应用是将理论知识转化为技能的关键步骤，在不同情境中应用知识能增强知识迁移能力。",
+            "定期回顾已学知识可以防止遗忘，根据艾宾浩斯遗忘曲线，及时复习能有效减缓遗忘速度。",
+            "培养学生的创造力比单纯传授知识更重要，发散思维训练能提高问题解决能力。",
+            
+            // 学习心理与习惯
+            "学生之间的同伴学习可以相互促进成长，同伴反馈提供了不同的视角和思考方式。",
+            "合理安排学习时间可以避免认知疲劳，研究表明连续学习超过90分钟效率会显著下降。",
+            "给予具体、建设性的反馈比笼统评价更有价值，明确指出优点和改进方向的反馈效果最佳。",
+            "建立学习习惯比临时突击学习更有效，习惯形成通常需要21-66天的持续实践。",
+            "培养批判性阅读能力是信息时代的重要技能，能帮助辨别信息的真实性和可靠性。",
+            "学习中的挫折体验是成长的重要组成部分，克服学习困难的过程能培养韧性和解决问题的能力。",
+            "将复杂任务分解为小步骤可以降低学习难度，这种方法被称为'任务分解法'，有助于管理大型学习项目。",
+            "学习成果的及时反馈可以调整学习策略，反馈应当包括具体的改进建议。",
+            "培养自我管理能力是终身学习的基础，自我调节学习能力与学术成就高度相关。",
+            "跨学科学习可以拓宽思维视野，整合不同学科知识能培养综合分析能力。",
+            
+            // 新增内容：学习科学前沿
+            "神经可塑性研究表明，大脑会根据学习活动持续改变，即使在成年后也能形成新的神经连接。",
+            "睡眠对学习和记忆至关重要，深度睡眠期间大脑会巩固白天学习的信息，提高睡眠质量可提升学习效率。",
+            "冥想和正念练习可以提高专注力和学习效率，每天10分钟的正念练习能显著改善注意力持续时间。",
+            "认知负荷理论指出，学习材料的复杂度应当与学习者的认知能力相匹配，避免认知超载。",
+            "间隔重复系统(如Anki)利用记忆科学原理，通过优化复习间隔显著提高记忆效率。",
+            "元认知策略(了解自己的学习过程)能提高学习效果，培养学生评估自己学习状态的能力至关重要。",
+            "环境因素对学习有显著影响，适宜的温度(20-22°C)和充足的自然光能提高学习效率。",
+            "数字素养已成为21世纪核心技能，包括信息筛选、批判性评估和负责任使用数字工具的能力。",
+            "情感智能在学习中扮演重要角色，自我意识、自我管理、社交意识和关系管理能力影响学习效果。",
+            "微学习(Microlearning)将内容分解为短小精悍的模块，适合现代碎片化学习环境，提高知识吸收率。",
+            
+            // 新增内容：教育与学习趣闻
+            "达芬奇在笔记本中使用镜像书写，这种独特的书写方式可能帮助他专注思考并减少干扰。",
+            "爱因斯坦每天午休并进行'白日梦'，这种有意识的休息被认为有助于他的创造性思考。",
+            "研究表明，教室内植物能提高学生注意力达15%，改善空气质量并减轻压力。",
+            "莫扎特效应指的是聆听莫扎特音乐可能短期提升空间推理能力，虽然效果有限但展示了音乐与认知的联系。",
+            "美国发明家爱迪生有独特的创意激发方法：在椅子上放松并手持钢球，当入睡时钢球掉落惊醒他，此时捕捉半睡半醒间的创意。",
+            "学习第二语言能延缓认知衰退，双语者患阿尔茨海默病的平均年龄比单语者晚4-5年。",
+            "古希腊哲学家苏格拉底使用'产婆术'(通过提问引导思考)教学，这种方法至今仍被视为有效的教育技术。",
+            "研究显示，站立学习能提高心率和大脑血流，可能增强注意力和信息处理能力。",
+            "颜色心理学研究表明，蓝色环境有助于提高创造力，绿色环境有助于减轻眼睛疲劳和提高阅读效率。",
+            "孔子在2500多年前就提出'因材施教'的教育理念，这与现代个性化教育思想高度一致。",
+            
+            // 新增内容：实用学习技巧
+            "主动回忆(不看材料尝试回忆内容)比简单重复阅读更有效，这是一种高强度的学习策略。",
+            "费曼学习法(以教促学)包含四个步骤：选择概念、用简单语言解释、识别知识缺口、简化和类比。",
+            "思维导图应使用关键词而非完整句子，这有助于促进创意联想和记忆。",
+            "复习时应采用'交错学习'(混合不同主题)而非'集中学习'(专注单一主题)，能提高长期记忆效果。",
+            "创建个人学习空间并保持一致性能增强学习仪式感，条件反射般地进入学习状态。",
+            "使用'康奈尔笔记法'(分为笔记区、提示区和总结区)可以提高课堂笔记的组织性和复习效率。",
+            "学习前设定具体意图能提高专注度，明确学习目标和预期成果。",
+            "教授知识的同时记录学习过程(学习日志)，有助于识别个人学习模式和改进空间。",
+            "使用'5秒法则'克服学习拖延：当想学习时，倒数5-4-3-2-1，然后立即开始，避免犹豫和借口。",
+            "'番茄工作法'不仅适用于学习，也可用于复习和问题解决，关键是严格执行休息时间。",
+            
+            // 新增内容：学习与健康
+            "身体活动能提高认知功能，研究表明每周至少150分钟中等强度运动能改善记忆力和注意力。",
+            "饮食对大脑功能有显著影响，富含Omega-3脂肪酸、抗氧化剂和复合碳水化合物的食物有助于认知健康。",
+            "水分摄入不足会影响认知表现，轻度脱水(仅2%)就能显著降低注意力、记忆力和解决问题的能力。",
+            "规律作息对学习至关重要，保持一致的睡眠时间能优化记忆巩固和认知功能。",
+            "压力管理是有效学习的关键，慢性压力会损害记忆力，但适度压力能提高专注力和表现。",
+            "社交联系对学习有积极影响，与同学讨论和合作能深化理解并提供情感支持。",
+            "环境噪音对学习的影响因人而异，有些人在安静环境中学习效率更高，而有些人则在适度背景噪音下表现更好。",
+            "定期休息和恢复是持续高效学习的基础，过度学习可能导致倦怠和效率下降。",
+            "积极的自我对话能提升学习信心和表现，用鼓励性语言替代自我怀疑。",
+            "感恩练习有助于改善学习心态，定期反思学习中的进步和收获能增强学习动力。"
         ];
         
         let countdownInterval = null;
@@ -1512,31 +1537,107 @@ function updateCurrentDate() {
             updateSelectedNumbersDisplay();
         }
         
-        function selectStudentRange() {
-            const rangeInput = prompt('请输入学号范围（格式：开始-结束，如 1-10）：');
-            if (!rangeInput) return;
+        // 创建自定义输入模态框
+        function createInputModal(title, placeholder, defaultValue = '', onConfirm) {
+            // 创建模态框容器
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="glass-effect rounded-2xl w-full max-w-md">
+                    <div class="p-6 border-b border-white/20">
+                        <h3 class="text-xl font-bold text-dark">${title}</h3>
+                    </div>
+                    <div class="p-6">
+                        <input 
+                            type="text" 
+                            id="modal-input" 
+                            class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300"
+                            placeholder="${placeholder}"
+                            value="${defaultValue}"
+                        >
+                    </div>
+                    <div class="p-6 border-t border-white/20 flex gap-3">
+                        <button id="modal-cancel" class="flex-1 px-4 py-3 glass-effect border border-white/30 rounded-xl hover:bg-gray-200/20 transition-all duration-300">
+                            取消
+                        </button>
+                        <button id="modal-confirm" class="flex-1 px-4 py-3 gradient-border bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 hover:shadow-lg">
+                            确认
+                        </button>
+                    </div>
+                </div>
+            `;
             
-            const [start, end] = rangeInput.split('-').map(Number);
-            if (isNaN(start) || isNaN(end) || start > end) {
-                alert('请输入有效的范围格式！');
-                return;
-            }
+            document.body.appendChild(modal);
             
-            // 验证范围在有效范围内
-            if (start < classConfig.minStudentId || end > classConfig.maxStudentId) {
-                alert(`范围必须在 ${classConfig.minStudentId}-${classConfig.maxStudentId} 之间！`);
-                return;
-            }
+            const input = document.getElementById('modal-input');
+            const cancelBtn = document.getElementById('modal-cancel');
+            const confirmBtn = document.getElementById('modal-confirm');
             
-            // 添加范围内的学号
-            for (let i = start; i <= end; i++) {
-                if (!classConfig.excludedIds.includes(i) && !selectedStudentNumbers.includes(i)) {
-                    selectedStudentNumbers.push(i);
+            // 自动聚焦输入框
+            input.focus();
+            input.select();
+            
+            // 取消按钮事件
+            cancelBtn.addEventListener('click', () => {
+                modal.remove();
+            });
+            
+            // 确认按钮事件
+            confirmBtn.addEventListener('click', () => {
+                const value = input.value;
+                modal.remove();
+                onConfirm(value);
+            });
+            
+            // 回车键确认
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const value = input.value;
+                    modal.remove();
+                    onConfirm(value);
                 }
-            }
+            });
             
-            updateStudentNumberButtons();
-            updateSelectedNumbersDisplay();
+            // ESC键取消
+            document.addEventListener('keydown', function handleEsc(e) {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            });
+        }
+        
+        function selectStudentRange() {
+            createInputModal(
+                '选择学号范围', 
+                '请输入学号范围（格式：开始-结束，如 1-10）', 
+                '',
+                (rangeInput) => {
+                    if (!rangeInput) return;
+                    
+                    const [start, end] = rangeInput.split('-').map(Number);
+                    if (isNaN(start) || isNaN(end) || start > end) {
+                        showToast('请输入有效的范围格式！', 'error');
+                        return;
+                    }
+                    
+                    // 验证范围在有效范围内
+                    if (start < classConfig.minStudentId || end > classConfig.maxStudentId) {
+                        showToast(`范围必须在 ${classConfig.minStudentId}-${classConfig.maxStudentId} 之间！`, 'error');
+                        return;
+                    }
+                    
+                    // 添加范围内的学号
+                    for (let i = start; i <= end; i++) {
+                        if (!classConfig.excludedIds.includes(i) && !selectedStudentNumbers.includes(i)) {
+                            selectedStudentNumbers.push(i);
+                        }
+                    }
+                    
+                    updateStudentNumberButtons();
+                    updateSelectedNumbersDisplay();
+                }
+            );
         }
         
         function clearAllStudentSelections() {
@@ -2256,30 +2357,36 @@ function updateCurrentDate() {
                 const courseId = parseInt(modal.dataset.courseId);
                 const course = scheduleData[currentDay].find(c => c.id === courseId);
                 if (course) {
-                    const rangeInput = prompt('请输入学号范围（格式：开始-结束，如 1-10）：');
-                    if (!rangeInput) return;
-                    
-                    const [start, end] = rangeInput.split('-').map(Number);
-                    if (isNaN(start) || isNaN(end) || start > end) {
-                        alert('请输入有效的范围格式！');
-                        return;
-                    }
-                    
-                    // 验证范围在有效范围内
-                    if (start < classConfig.minStudentId || end > classConfig.maxStudentId) {
-                        alert(`范围必须在 ${classConfig.minStudentId}-${classConfig.maxStudentId} 之间！`);
-                        return;
-                    }
-                    
-                    // 添加范围内的学号
-                    for (let i = start; i <= end; i++) {
-                        if (!classConfig.excludedIds.includes(i) && !course.poorStudents.includes(i)) {
-                            course.poorStudents.push(i);
+                    createInputModal(
+                        '选择学号范围', 
+                        '请输入学号范围（格式：开始-结束，如 1-10）', 
+                        '',
+                        (rangeInput) => {
+                            if (!rangeInput) return;
+                            
+                            const [start, end] = rangeInput.split('-').map(Number);
+                            if (isNaN(start) || isNaN(end) || start > end) {
+                                showToast('请输入有效的范围格式！', 'error');
+                                return;
+                            }
+                            
+                            // 验证范围在有效范围内
+                            if (start < classConfig.minStudentId || end > classConfig.maxStudentId) {
+                                showToast(`范围必须在 ${classConfig.minStudentId}-${classConfig.maxStudentId} 之间！`, 'error');
+                                return;
+                            }
+                            
+                            // 添加范围内的学号
+                            for (let i = start; i <= end; i++) {
+                                if (!classConfig.excludedIds.includes(i) && !course.poorStudents.includes(i)) {
+                                    course.poorStudents.push(i);
+                                }
+                            }
+                            
+                            // 更新UI
+                            updateModalStudentButtons(course.poorStudents);
                         }
-                    }
-                    
-                    // 更新UI
-                    updateModalStudentButtons(course.poorStudents);
+                    );
                 }
             });
             
@@ -2586,7 +2693,7 @@ function updateCurrentDate() {
                     const newConfirmHandler = function() {
                         subject = document.getElementById('custom-subject-input').value;
                         if (!subject || subject.trim() === '') {
-                            alert('科目名称不能为空');
+                            showToast('科目名称不能为空', 'error');
                             return;
                         }
                         
@@ -2599,7 +2706,7 @@ function updateCurrentDate() {
                         
                         // 继续添加记录的逻辑
                         if (currentSelectedStudents.length === 0) {
-                            alert('请至少选择一名未交作业的学生');
+                            showToast('请至少选择一名未交作业的学生', 'error');
                             return;
                         }
                         
@@ -2634,7 +2741,7 @@ function updateCurrentDate() {
                 }
                 
                 if (selectedStudentNumbers.length === 0) {
-                    alert('请至少选择一名未交作业的学生');
+                    showToast('请至少选择一名未交作业的学生', 'error');
                     return;
                 }
                 
@@ -2705,12 +2812,35 @@ function updateCurrentDate() {
                 `;
                 
                 const deleteBtn = recordDiv.querySelector('.delete-record');
-                deleteBtn.addEventListener('click', function() {
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // 阻止事件冒泡到父元素
                     const recordId = parseInt(this.dataset.id);
+                    // 从内存中移除记录
                     homeworkRecords = homeworkRecords.filter(r => r.id !== recordId);
-                displayHomeworkRecords();
-                // 保存到 IndexedDB
-                saveHomeworkRecords();
+                    
+                    // 从IndexedDB中移除记录
+                    if (db) {
+                        const transaction = db.transaction(['homework'], 'readwrite');
+                        const store = transaction.objectStore('homework');
+                        store.delete(recordId);
+                        
+                        transaction.oncomplete = () => {
+                            console.log('记录从数据库中删除成功');
+                        };
+                        
+                        transaction.onerror = () => {
+                            console.error('记录从数据库中删除失败');
+                        };
+                    }
+                    
+                    // 更新UI显示
+                    displayHomeworkRecords();
+                });
+                
+                // 添加点击事件以编辑学生名单
+                recordDiv.addEventListener('click', function() {
+                    const recordId = parseInt(this.querySelector('.delete-record').dataset.id);
+                    openEditHomeworkModal(recordId);
                 });
                 
                 container.appendChild(recordDiv);
@@ -2721,10 +2851,205 @@ function updateCurrentDate() {
             }
         }
         
+        // 创建编辑未交作业记录的模态框
+        function createEditHomeworkModal() {
+            // 确保模态框只创建一次
+            let modal = document.getElementById('edit-homework-modal');
+            if (modal) {
+                return modal;
+            }
+            
+            modal = document.createElement('div');
+            modal.id = 'edit-homework-modal';
+            modal.className = 'fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="glass-effect rounded-2xl w-full max-w-md">
+                    <div class="p-6 border-b border-white/20">
+                        <h2 class="text-xl font-bold text-dark">修改未交作业学生</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <div class="text-sm text-gray-500 mb-1" id="modal-record-date"></div>
+                            <div class="font-medium text-dark mb-4" id="modal-record-subject"></div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">选择未交作业学生学号</label>
+                            <div id="modal-student-selector" class="flex flex-wrap gap-2 max-h-64 overflow-y-auto scrollbar-hide p-3 glass-effect border border-white/30 rounded-xl"></div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="modal-cancel-edit" class="flex-1 px-4 py-3 glass-effect border border-white/30 rounded-xl hover:bg-gray-200/20 transition-all duration-300">
+                                取消
+                            </button>
+                            <button id="modal-confirm-edit" class="flex-1 px-4 py-3 gradient-border bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 hover:shadow-lg">
+                                确认修改
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // 添加关闭事件
+            document.getElementById('modal-cancel-edit').addEventListener('click', function() {
+                modal.classList.add('hidden');
+            });
+            
+            // 点击模态框外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+            
+            // 确认修改事件
+            document.getElementById('modal-confirm-edit').addEventListener('click', function() {
+                const recordId = parseInt(modal.dataset.recordId);
+                const selectedStudents = Array.from(document.querySelectorAll('#modal-student-selector .student-number-btn'))
+                    .filter(btn => btn.classList.contains('selected'))
+                    .map(btn => parseInt(btn.dataset.number));
+                
+                if (selectedStudents.length === 0) {
+                    showToast('请至少选择一名未交作业的学生', 'error');
+                    return;
+                }
+                
+                // 更新内存中的记录
+                const recordIndex = homeworkRecords.findIndex(r => r.id === recordId);
+                if (recordIndex !== -1) {
+                    homeworkRecords[recordIndex].students = [...selectedStudents];
+                    
+                    // 更新IndexedDB
+                    if (db) {
+                        const transaction = db.transaction(['homework'], 'readwrite');
+                        const store = transaction.objectStore('homework');
+                        store.put(homeworkRecords[recordIndex]);
+                        
+                        transaction.oncomplete = () => {
+                            console.log('记录更新成功');
+                        };
+                        
+                        transaction.onerror = () => {
+                            console.error('记录更新失败');
+                        };
+                    }
+                    
+                    // 更新UI
+                    displayHomeworkRecords();
+                    showToast('修改成功', 'success');
+                }
+                
+                // 关闭模态框
+                modal.classList.add('hidden');
+            });
+            
+            return modal;
+        }
+        
+        // 打开编辑未交作业记录模态框
+        function openEditHomeworkModal(recordId) {
+            // 获取或创建模态框
+            const modal = createEditHomeworkModal();
+            
+            // 保存当前记录ID
+            modal.dataset.recordId = recordId;
+            
+            // 获取记录数据
+            const record = homeworkRecords.find(r => r.id === recordId);
+            if (record) {
+                // 设置记录信息
+                document.getElementById('modal-record-date').textContent = record.date;
+                document.getElementById('modal-record-subject').textContent = record.subject;
+                
+                // 生成学号选择按钮
+                const container = document.getElementById('modal-student-selector');
+                container.innerHTML = '';
+                
+                // 添加选中样式的CSS（确保每次打开模态框时都应用）
+                if (!document.querySelector('#edit-homework-modal-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'edit-homework-modal-style';
+                    style.textContent = `
+                        .student-number-btn.selected {
+                            background-color: rgba(59, 130, 246, 0.2); /* primary color with 20% opacity */
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                // 创建一个函数来处理按钮点击
+                function handleButtonClick() {
+                    if (this.classList.contains('selected')) {
+                        // 取消选择
+                        this.classList.remove('selected');
+                        this.classList.remove('border-primary');
+                        this.dataset.selected = 'false';
+                    } else {
+                        // 选择
+                        this.classList.add('selected', 'border-primary');
+                        this.dataset.selected = 'true';
+                    }
+                }
+                
+                // 根据配置生成学号按钮
+                for (let i = classConfig.minStudentId; i <= classConfig.maxStudentId; i++) {
+                    // 跳过排除的学号
+                    if (classConfig.excludedIds.includes(i)) continue;
+                    
+                    const button = document.createElement('button');
+                    // 使用自定义数据属性来标记选中状态，避免CSS选择器中的斜杠问题
+                    button.className = `student-number-btn w-10 h-10 flex items-center justify-center rounded-full glass-effect border border-white/30 hover:bg-primary/10 transition-all duration-300 hover-lift ${record.students.includes(i) ? 'selected' : ''}`;
+                    button.dataset.selected = record.students.includes(i) ? 'true' : 'false';
+                    button.textContent = i;
+                    button.dataset.number = i;
+                    
+                    // 添加点击事件
+                    button.addEventListener('click', handleButtonClick);
+                    
+                    container.appendChild(button);
+                }
+                
+                // 显示模态框
+                modal.classList.remove('hidden');
+            }
+        }
+        
         // 导出Excel
         function exportToExcel() {
             // 创建工作簿
             const wb = XLSX.utils.book_new();
+            
+            // 定义样式
+            const styles = {
+                header: {
+                    font: { bold: true, sz: 12, color: { rgb: "000000" } },
+                    fill: { type: "pattern", patternType: "solid", fgColor: { rgb: "CCCCCC" } },
+                    alignment: { horizontal: "center", vertical: "center" },
+                    border: {
+                        top: { style: "thin", color: { rgb: "000000" } },
+                        bottom: { style: "thin", color: { rgb: "000000" } },
+                        left: { style: "thin", color: { rgb: "000000" } },
+                        right: { style: "thin", color: { rgb: "000000" } }
+                    }
+                },
+                cell: {
+                    font: { sz: 11, color: { rgb: "000000" } },
+                    alignment: { horizontal: "left", vertical: "top", wrapText: true },
+                    border: {
+                        top: { style: "thin", color: { rgb: "DDDDDD" } },
+                        bottom: { style: "thin", color: { rgb: "DDDDDD" } },
+                        left: { style: "thin", color: { rgb: "DDDDDD" } },
+                        right: { style: "thin", color: { rgb: "DDDDDD" } }
+                    }
+                },
+                numberCell: {
+                    font: { sz: 11, color: { rgb: "000000" } },
+                    alignment: { horizontal: "right", vertical: "center" },
+                    border: {
+                        top: { style: "thin", color: { rgb: "DDDDDD" } },
+                        bottom: { style: "thin", color: { rgb: "DDDDDD" } },
+                        left: { style: "thin", color: { rgb: "DDDDDD" } },
+                        right: { style: "thin", color: { rgb: "DDDDDD" } }
+                    }
+                }
+            };
             
             // 准备课程数据 - 每天一列的格式
             // 获取最大课时数
@@ -2813,17 +3138,110 @@ function updateCurrentDate() {
             // 课程表现表使用二维数组直接创建
             if (scheduleSheetData.length > 1) { // 确保有数据行
                 const wsSchedule = XLSX.utils.aoa_to_sheet(scheduleSheetData);
+                
+                // 设置单元格样式和列宽
+                // 为表头设置样式
+                const range = XLSX.utils.decode_range(wsSchedule['!ref']);
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    // 表头单元格样式
+                    const address = XLSX.utils.encode_cell({c: C, r: 0});
+                    wsSchedule[address].s = styles.header;
+                    
+                    // 课时列使用数字对齐
+                    if (C === 0) {
+                        for (let R = 1; R <= range.e.r; ++R) {
+                            const cellAddress = XLSX.utils.encode_cell({c: C, r: R});
+                            if (wsSchedule[cellAddress]) {
+                                wsSchedule[cellAddress].s = styles.numberCell;
+                            }
+                        }
+                        // 设置课时列宽
+                        wsSchedule['!cols'] = wsSchedule['!cols'] || [];
+                        wsSchedule['!cols'][0] = {wch: 6};
+                    } else {
+                        // 其他列使用文本对齐
+                        for (let R = 1; R <= range.e.r; ++R) {
+                            const cellAddress = XLSX.utils.encode_cell({c: C, r: R});
+                            if (wsSchedule[cellAddress]) {
+                                wsSchedule[cellAddress].s = styles.cell;
+                            }
+                        }
+                        // 设置其他列宽
+                        wsSchedule['!cols'] = wsSchedule['!cols'] || [];
+                        wsSchedule['!cols'][C] = {wch: 30}; // 课程内容列宽
+                    }
+                }
+                
+                // 设置行高
+                wsSchedule['!rows'] = [];
+                for (let R = 0; R <= range.e.r; ++R) {
+                    if (R === 0) {
+                        // 表头行高
+                        wsSchedule['!rows'][R] = {hpt: 30};
+                    } else {
+                        // 数据行高 - 考虑多行文本
+                        wsSchedule['!rows'][R] = {hpt: 60};
+                    }
+                }
+                
                 XLSX.utils.book_append_sheet(wb, wsSchedule, '课程表现');
             }
             
             if (homeworkDataForExcel.length > 0) {
                 const wsHomework = XLSX.utils.json_to_sheet(homeworkDataForExcel);
+                
+                // 设置单元格样式和列宽
+                const range = XLSX.utils.decode_range(wsHomework['!ref']);
+                
+                // 为表头设置样式
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const address = XLSX.utils.encode_cell({c: C, r: 0});
+                    wsHomework[address].s = styles.header;
+                }
+                
+                // 为数据单元格设置样式
+                for (let R = 1; R <= range.e.r; ++R) {
+                    for (let C = range.s.c; C <= range.e.c; ++C) {
+                        const address = XLSX.utils.encode_cell({c: C, r: R});
+                        if (wsHomework[address]) {
+                            // 学号列使用数字对齐
+                            if (C === 2) { // 未交学号列
+                                wsHomework[address].s = styles.numberCell;
+                            } else { // 其他列使用文本对齐
+                                wsHomework[address].s = styles.cell;
+                            }
+                        }
+                    }
+                }
+                
+                // 设置列宽
+                wsHomework['!cols'] = [
+                    {wch: 12}, // 日期列宽
+                    {wch: 10}, // 科目列宽
+                    {wch: 10}  // 学号列宽
+                ];
+                
+                // 设置行高
+                wsHomework['!rows'] = [];
+                for (let R = 0; R <= range.e.r; ++R) {
+                    wsHomework['!rows'][R] = {hpt: 25};
+                }
+                
                 XLSX.utils.book_append_sheet(wb, wsHomework, '未交作业记录');
             }
+            
+            // 设置工作簿属性
+            wb.Props = {
+                Title: "班级统计报告",
+                Subject: "班级学情统计",
+                Author: "班级学情统计系统",
+                CreatedDate: new Date()
+            };
             
             // 导出文件
             const dateStr = new Date().toISOString().split('T')[0];
             XLSX.writeFile(wb, `班级统计_${dateStr}.xlsx`);
+            showToast('Excel导出成功，已优化表格格式', 'success');
         }
     </script>
 </body>
