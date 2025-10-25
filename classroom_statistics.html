@@ -1949,6 +1949,37 @@ function updateCurrentDate() {
                 if (!window.currentDayAutoSelected) {
                     currentDay = today;
                     window.currentDayAutoSelected = true;
+                    
+                    // 更新UI上的按钮选中状态
+                    const dayButtons = document.querySelectorAll('.day-btn');
+                    dayButtons.forEach(btn => {
+                        if (btn.dataset.day === today) {
+                            // 重置所有按钮样式
+                            dayButtons.forEach(b => {
+                                b.classList.remove('gradient-border', 'bg-primary', 'text-white');
+                                b.classList.add('glass-effect', 'border', 'border-white/30', 'hover:bg-primary/10');
+                            });
+                            
+                            // 设置当前日期按钮的样式
+                            btn.classList.add('gradient-border', 'bg-primary', 'text-white');
+                            btn.classList.remove('glass-effect', 'border', 'border-white/30', 'hover:bg-primary/10');
+                            
+                            // 模拟点击效果，添加切换动画
+                            const container = document.getElementById('schedule-container');
+                            if (container) {
+                                container.style.opacity = '0';
+                                container.style.transform = 'translateY(20px)';
+                                container.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                                
+                                setTimeout(() => {
+                                    generateSchedule();
+                                    container.style.opacity = '1';
+                                    container.style.transform = 'translateY(0)';
+                                }, 150);
+                            }
+                        }
+                    });
+                    
                     console.log(`自动选择日期: ${today}`);
                 }
             } else {
