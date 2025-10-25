@@ -16,7 +16,7 @@ Licensed under the MIT License
     <meta name="description" content="轻量级课堂统计管理Web应用">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="bjbz.png">
-    <title>初一二班学情统计</title>
+    <title>学情统计</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -28,12 +28,12 @@ Licensed under the MIT License
                 extend: {
                     colors: {
                         primary: '#3B82F6',
-                        secondary: '#10B981',
-                        accent: '#8B5CF6',
-                        warning: '#F59E0B',
-                        danger: '#EF4444',
-                        light: '#F3F4F6',
-                        dark: '#1F2937'
+                    secondary: '#10B981',
+                    accent: '#8B5CF6',
+                    warning: '#F59E0B',
+                    danger: '#EF4444',
+                    light: '#F3F4F6',
+                    dark: '#1F2937'
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -282,7 +282,7 @@ Licensed under the MIT License
             <div class="p-5 border-b border-white/20 flex justify-between items-center">
                 <h3 class="text-xl font-semibold text-dark flex items-center gap-2">
                     <i class="fa fa-lightbulb-o text-warning animate-pulse-slow"></i>
-                    你知道吗？
+                    你知道吗？ (我不知道)
                 </h3>
                 <button id="fun-fact-refresh" class="gradient-border bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg">
                     <i class="fa fa-refresh"></i>
@@ -337,13 +337,13 @@ Licensed under the MIT License
             classInfo: {
                 name: "初一二班",
                 grade: "初一",
-                motto: "「以 Glide 之速，结 Plum 之果」"
+                motto: "「怀少年意气而不躁，守初心本真而不迂；于求知中砺本领，于共情中暖彼此」"
             }
         };
         
         // IndexedDB 数据库
         const DB_NAME = 'slss-database';
-        const DB_VERSION = 4; // 更新版本号以匹配现有数据库
+        const DB_VERSION = 5; // 数据库版本号
         let db = null;
         
         // 初始化 IndexedDB
@@ -407,7 +407,7 @@ Licensed under the MIT License
                                     classInfo: {
                                     name: "初一二班",
                                     grade: "初一",
-                                    motto: "「以 Glide 之速，结 Plum 之果」"
+                                    motto: "「怀少年意气而不躁，守初心本真而不迂；于求知中砺本领，于共情中暖彼此」"
                                 }
                                 }
                             });
@@ -695,7 +695,53 @@ Licensed under the MIT License
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">班级名称</label>
-                                    <input id="config-class-name" type="text" value="${classConfig.classInfo.name}" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                                    <div class="relative">
+                                        <input type="text" id="config-class-name-display" value="${classConfig.classInfo.name}" readonly 
+                                            class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 cursor-pointer bg-white/10">
+                                        <button id="open-class-selector" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors duration-300">
+                                            <i class="fa fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="config-class-name" value="${classConfig.classInfo.name}">
+                                    <input type="hidden" id="config-class-grade" value="${classConfig.classInfo.grade || '初一'}">
+                                    
+                                    <!-- 班级选择模态框 -->
+                                    <div id="class-selection-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                                        <div class="glass-effect rounded-2xl w-full max-w-2xl p-6 transform transition-all duration-300 hover:shadow-xl">
+                                            <div class="p-4 border-b border-white/20 mb-4">
+                                                <h2 class="text-xl font-bold text-dark">选择班级</h2>
+                                            </div>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                                <div>
+                                                    <h3 class="text-dark font-medium mb-3">选择年级</h3>
+                                                    <div class="space-y-2 grade-selection">
+                                                        <button class="grade-btn w-full p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.grade === '初一' ? 'selected border-primary' : ''}" data-grade="初一">初一</button>
+                                                        <button class="grade-btn w-full p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.grade === '初二' ? 'selected border-primary' : ''}" data-grade="初二">初二</button>
+                                                        <button class="grade-btn w-full p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.grade === '初三' ? 'selected border-primary' : ''}" data-grade="初三">初三</button>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-dark font-medium mb-3">选择班级</h3>
+                                                    <div class="grid grid-cols-2 gap-2 class-selection">
+                                                        <button class="class-btn p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.name.includes('一班') ? 'selected border-primary' : ''}" data-class="一班">一班</button>
+                                                        <button class="class-btn p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.name.includes('二班') ? 'selected border-primary' : ''}" data-class="二班">二班</button>
+                                                        <button class="class-btn p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.name.includes('三班') ? 'selected border-primary' : ''}" data-class="三班">三班</button>
+                                                        <button class="class-btn p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.name.includes('四班') ? 'selected border-primary' : ''}" data-class="四班">四班</button>
+                                                        <button class="class-btn p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.name.includes('五班') ? 'selected border-primary' : ''}" data-class="五班">五班</button>
+                                                        <button class="class-btn p-3 glass-effect border border-white/30 rounded-xl hover:bg-primary/10 transition-all duration-300 ${classConfig.classInfo.name.includes('六班') ? 'selected border-primary' : ''}" data-class="六班">六班</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-3">
+                                                <button id="class-selection-cancel" class="flex-1 px-4 py-3 glass-effect border border-white/30 rounded-xl hover:bg-gray-200/20 transition-all duration-300">
+                                                    取消
+                                                </button>
+                                                <button id="class-selection-confirm" class="flex-1 px-4 py-3 gradient-border bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 hover:shadow-lg">
+                                                    确认
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">年级（将自动关联对应学科）</label>
@@ -768,6 +814,110 @@ Licensed under the MIT License
             document.getElementById('save-config').addEventListener('click', saveConfigChanges);
             document.getElementById('export-all-data').addEventListener('click', exportAllData);
             document.getElementById('reset-all-data').addEventListener('click', resetAllData);
+            
+            // 绑定班级选择事件
+            const classNameDisplay = document.getElementById('config-class-name-display');
+            const openClassSelectorBtn = document.getElementById('open-class-selector');
+            
+            if (classNameDisplay) {
+                classNameDisplay.addEventListener('click', openClassSelectionModal);
+            }
+            
+            if (openClassSelectorBtn) {
+                openClassSelectorBtn.addEventListener('click', openClassSelectionModal);
+            }
+        }
+        
+        // 打开班级选择模态框
+        function openClassSelectionModal() {
+            const modal = document.getElementById('class-selection-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                // 防止背景滚动
+                document.body.style.overflow = 'hidden';
+                
+                // 初始化选中状态
+                const gradeBtns = modal.querySelectorAll('.grade-btn');
+                const classBtns = modal.querySelectorAll('.class-btn');
+                
+                // 清除所有选中状态
+                gradeBtns.forEach(btn => btn.classList.remove('selected', 'border-primary'));
+                classBtns.forEach(btn => btn.classList.remove('selected', 'border-primary'));
+                
+                // 设置当前选中状态
+                const currentGrade = document.getElementById('config-class-grade').value || '初一';
+                const currentClassName = document.getElementById('config-class-name').value || '初一二班';
+                
+                const selectedGradeBtn = modal.querySelector(`.grade-btn[data-grade="${currentGrade}"]`);
+                const selectedClassBtn = modal.querySelector(`.class-btn[data-class="${currentClassName.substring(2)}"]`);
+                
+                if (selectedGradeBtn) selectedGradeBtn.classList.add('selected', 'border-primary');
+                if (selectedClassBtn) selectedClassBtn.classList.add('selected', 'border-primary');
+                
+                // 添加年级按钮点击事件
+                gradeBtns.forEach(btn => {
+                    btn.onclick = function() {
+                        gradeBtns.forEach(b => b.classList.remove('selected', 'border-primary'));
+                        this.classList.add('selected', 'border-primary');
+                    };
+                });
+                
+                // 添加班级按钮点击事件
+                classBtns.forEach(btn => {
+                    btn.onclick = function() {
+                        classBtns.forEach(b => b.classList.remove('selected', 'border-primary'));
+                        this.classList.add('selected', 'border-primary');
+                    };
+                });
+                
+                // 确认按钮事件
+                const confirmBtn = modal.querySelector('#class-selection-confirm');
+                confirmBtn.onclick = function() {
+                    const selectedGrade = modal.querySelector('.grade-btn.selected')?.dataset.grade || currentGrade;
+                    const selectedClass = modal.querySelector('.class-btn.selected')?.dataset.class || currentClassName.substring(2);
+                    
+                    // 更新隐藏输入
+                    document.getElementById('config-class-grade').value = selectedGrade;
+                    document.getElementById('config-class-name').value = `${selectedGrade}${selectedClass}`;
+                    
+                    // 更新显示输入
+                    document.getElementById('config-class-name-display').value = `${selectedGrade}${selectedClass}`;
+                    
+                    // 关闭模态框
+                    closeClassSelectionModal();
+                    
+                    // 显示成功提示
+                    showToast(`已选择 ${selectedGrade}${selectedClass}`, 'success');
+                };
+                
+                // 取消按钮事件
+                const cancelBtn = modal.querySelector('#class-selection-cancel');
+                cancelBtn.onclick = closeClassSelectionModal;
+                
+                // 点击背景关闭
+                modal.onclick = function(e) {
+                    if (e.target === modal) closeClassSelectionModal();
+                };
+                
+                // ESC键关闭
+                function handleEsc(e) {
+                    if (e.key === 'Escape') {
+                        closeClassSelectionModal();
+                        document.removeEventListener('keydown', handleEsc);
+                    }
+                }
+                document.addEventListener('keydown', handleEsc);
+            }
+        }
+        
+        // 关闭班级选择模态框
+        function closeClassSelectionModal() {
+            const modal = document.getElementById('class-selection-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                // 恢复背景滚动
+                document.body.style.overflow = '';
+            }
         }
         
         // 打开配置模态框
@@ -811,13 +961,13 @@ Licensed under the MIT License
                 
                 // 验证课程节数
                 if (classConfig.maxClassSections < 1 || classConfig.maxClassSections > 20) {
-                    alert('课程节数必须在1-20之间！');
+                    showToast('课程节数必须在1-20之间！', 'warning');
                     return;
                 }
                 
                 // 验证配置
                 if (classConfig.minStudentId > classConfig.maxStudentId) {
-                    alert('最小学号不能大于最大学号！');
+                    showToast('最小学号不能大于最大学号！', 'warning');
                     return;
                 }
                 
@@ -828,14 +978,14 @@ Licensed under the MIT License
                 closeConfigModal();
                 
                 // 提示用户并准备刷新页面
-                alert('配置保存成功！页面将自动刷新以应用更改。');
+                showToast('配置保存成功！页面将自动刷新以应用更改。', 'success');
                 
                 // 延迟一小段时间后刷新页面，确保用户能看到提示信息
                 setTimeout(() => {
                     window.location.reload();
                 }, 1000);
             } catch (error) {
-                alert('配置保存失败：' + error.message);
+                showToast('配置保存失败：' + error.message, 'error');
             }
         }
         
@@ -859,80 +1009,152 @@ Licensed under the MIT License
             linkElement.click();
         }
         
+        // 创建毛玻璃风格确认对话框
+        function createGlassConfirmDialog(title, message, onConfirm, onCancel) {
+            // 检查是否已存在对话框
+            const existingDialog = document.querySelector('#glass-confirm-dialog');
+            if (existingDialog) existingDialog.remove();
+            
+            // 创建对话框容器
+            const dialogContainer = document.createElement('div');
+            dialogContainer.id = 'glass-confirm-dialog';
+            dialogContainer.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+            
+            // 设置对话框HTML内容
+            dialogContainer.innerHTML = `
+                <div class="glass-effect rounded-2xl w-full max-w-md overflow-hidden transform transition-all duration-300 hover:shadow-xl">
+                    <div class="p-6 border-b border-white/20">
+                        <h3 class="text-xl font-bold text-dark">${title}</h3>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-dark/90 mb-6">${message}</p>
+                        <div class="flex gap-3">
+                            <button id="confirm-cancel" class="flex-1 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-dark transition-all duration-300">
+                                取消
+                            </button>
+                            <button id="confirm-accept" class="flex-1 py-3 rounded-lg bg-danger hover:bg-danger/90 text-white transition-all duration-300">
+                                确认
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加到文档
+            document.body.appendChild(dialogContainer);
+            
+            // 添加事件监听器
+            const cancelBtn = dialogContainer.querySelector('#confirm-cancel');
+            const acceptBtn = dialogContainer.querySelector('#confirm-accept');
+            
+            const handleCancel = () => {
+                dialogContainer.remove();
+                if (onCancel) onCancel();
+            };
+            
+            const handleAccept = () => {
+                dialogContainer.remove();
+                if (onConfirm) onConfirm();
+            };
+            
+            cancelBtn.addEventListener('click', handleCancel);
+            acceptBtn.addEventListener('click', handleAccept);
+            
+            // 点击背景关闭
+            dialogContainer.addEventListener('click', (e) => {
+                if (e.target === dialogContainer) handleCancel();
+            });
+            
+            // ESC键关闭
+            document.addEventListener('keydown', function handleEsc(e) {
+                if (e.key === 'Escape') {
+                    handleCancel();
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            });
+        }
+        
         // 重置所有数据
         function resetAllData() {
-            if (!confirm('确定要重置所有数据吗？此操作不可撤销！')) {
-                return;
-            }
-            
-            // 重置内存中的数据
-            const maxSections = classConfig.maxClassSections || 8;
-            scheduleData = {
-                "周一": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
-                "周二": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
-                "周三": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
-                "周四": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
-                "周五": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
-                "周六": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
-                "周日": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] }))
-            };
-            homeworkRecords = [];
-            selectedStudentNumbers = [];
-            
-            // 使用单一事务清除所有数据库数据
-            if (db) {
-                try {
-                    // 使用一个事务处理所有存储对象的清除
-                    const transaction = db.transaction(['schedule', 'homework', 'config'], 'readwrite');
-                    
-                    // 清除所有存储对象
-                    transaction.objectStore('schedule').clear();
-                    transaction.objectStore('homework').clear();
-                    transaction.objectStore('config').clear(); // 清除配置数据
-                    
-                    // 事务完成后更新UI和保存默认配置
-                    transaction.oncomplete = () => {
-                        console.log('所有数据库数据已清除');
-                        
-                        // 重置为默认班级配置
-                        classConfig = {
-                            minStudentId: 1,
-                            maxStudentId: 50,
-                            excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
-                            subjects: ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
-                            gradeSubjects: {
-                                "初一": ["语文", "数学", "英语", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
-                                "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
-                                "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"]
-                            },
-                            classInfo: {
-                                name: "初一二班",
-                                grade: "初一",
-                                motto: "「以 Glide 之速，结 Plum 之果」"
-                            }
-                        };
-                        
-                        // 保存默认配置
-                        saveClassConfig();
-                        
-                        // 更新UI
-                        updateUIAfterReset();
+            createGlassConfirmDialog(
+                '确认重置数据',
+                '确定要重置所有数据吗？此操作不可撤销！',
+                () => {
+                    // 用户确认后的操作
+                    // 重置内存中的数据
+                    const maxSections = classConfig.maxClassSections || 8;
+                    scheduleData = {
+                        "周一": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                        "周二": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                        "周三": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                        "周四": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                        "周五": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                        "周六": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] })),
+                        "周日": Array(maxSections).fill(null).map((_, i) => ({ id: i + 1, subject: '', rating: 0, notes: '', poorStudents: [] }))
                     };
+                    homeworkRecords = [];
+                    selectedStudentNumbers = [];
                     
-                    transaction.onerror = (event) => {
-                        console.error('清除数据库数据失败:', event.target.error);
-                        // 即使出错也更新UI
+                    // 使用单一事务清除所有数据库数据
+                    if (db) {
+                        try {
+                            // 使用一个事务处理所有存储对象的清除
+                            const transaction = db.transaction(['schedule', 'homework', 'config'], 'readwrite');
+                            
+                            // 清除所有存储对象
+                            transaction.objectStore('schedule').clear();
+                            transaction.objectStore('homework').clear();
+                            transaction.objectStore('config').clear(); // 清除配置数据
+                            
+                            // 事务完成后更新UI和保存默认配置
+                            transaction.oncomplete = () => {
+                                console.log('所有数据库数据已清除');
+                                
+                                // 重置为默认班级配置
+                                classConfig = {
+                                    minStudentId: 1,
+                                    maxStudentId: 50,
+                                    excludedIds: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
+                                    subjects: ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                                    gradeSubjects: {
+                                        "初一": ["语文", "数学", "英语", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                                        "初二": ["语文", "数学", "英语", "物理", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"],
+                                        "初三": ["语文", "数学", "英语", "物理", "化学", "历史", "地理", "政治", "生物", "体育", "心理", "信息", "音乐", "美术", "自习", "班会"]
+                                    },
+                                    classInfo: {
+                                        name: "初一二班",
+                                        grade: "初一",
+                                        motto: "「怀少年意气而不躁，守初心本真而不迂；于求知中砺本领，于共情中暖彼此」"
+                                    }
+                                };
+                                
+                                // 保存默认配置
+                                saveClassConfig();
+                                
+                                // 更新UI
+                                updateUIAfterReset();
+                            };
+                            
+                            transaction.onerror = (event) => {
+                                console.error('清除数据库数据失败:', event.target.error);
+                                // 即使出错也更新UI
+                                updateUIAfterReset();
+                            };
+                        } catch (error) {
+                            console.error('重置数据库时发生异常:', error);
+                            // 异常情况下也更新UI
+                            updateUIAfterReset();
+                        }
+                    } else {
+                        // 数据库不可用时，直接更新UI
                         updateUIAfterReset();
-                    };
-                } catch (error) {
-                    console.error('重置数据库时发生异常:', error);
-                    // 异常情况下也更新UI
-                    updateUIAfterReset();
+                    }
+                },
+                () => {
+                    // 用户取消后的操作（可选）
+                    console.log('用户取消了数据重置');
                 }
-            } else {
-                // 数据库不可用时，直接更新UI
-                updateUIAfterReset();
-            }
+            );
         }
         
         // 重置后更新UI的辅助函数
@@ -948,27 +1170,104 @@ Licensed under the MIT License
             document.querySelector('h1').textContent = `${classConfig.classInfo.name}学情统计`;
             updateClassMotto();
             
-            alert('所有数据已重置！');
+            // 使用Toast提示替代alert
+            showToast('所有数据已重置！', 'success');
         }
         
         // 保存课程表数据到 IndexedDB
         function saveScheduleData() {
-            if (!db) return;
+            // 数据库未初始化检查
+            if (!db) {
+                console.warn('数据库未初始化，无法保存数据');
+                showToast('数据保存失败：数据库未初始化', 'warning');
+                return;
+            }
             
-            const transaction = db.transaction(['schedule'], 'readwrite');
-            const store = transaction.objectStore('schedule');
-            
-            Object.keys(scheduleData).forEach(day => {
-                store.put({ day: day, courses: scheduleData[day] });
-            });
-            
-            transaction.oncomplete = () => {
-                console.log('课程表数据保存成功');
-            };
-            
-            transaction.onerror = () => {
-                console.error('课程表数据保存失败');
-            };
+            try {
+                // 验证 scheduleData 是否为有效对象
+                if (!scheduleData || typeof scheduleData !== 'object') {
+                    console.error('scheduleData 不是有效的数据对象');
+                    showToast('数据保存失败：数据格式错误', 'error');
+                    return;
+                }
+                
+                console.log('开始保存课程表数据');
+                
+                // 创建事务
+                const transaction = db.transaction(['schedule'], 'readwrite');
+                const store = transaction.objectStore('schedule');
+                
+                // 先清空现有数据
+                const clearRequest = store.clear();
+                
+                clearRequest.onsuccess = () => {
+                    console.log('已清空现有数据');
+                    
+                    // 收集要保存的数据项
+                    const daysToSave = Object.keys(scheduleData).filter(dayKey => 
+                        dayKey && typeof dayKey === 'string' && dayKey.trim() !== ''
+                    );
+                    
+                    if (daysToSave.length === 0) {
+                        console.log('没有有效数据需要保存');
+                        return;
+                    }
+                    
+                    // 使用 Promise.all 处理所有保存操作
+                    const savePromises = daysToSave.map(dayKey => {
+                        return new Promise((resolve, reject) => {
+                            // 创建标准化的数据对象
+                            const dataObject = {
+                                day: String(dayKey).trim(), // 强制转换为字符串并去除空白
+                                courses: Array.isArray(scheduleData[dayKey]) ? 
+                                    scheduleData[dayKey] : []
+                            };
+                            
+                            console.log('保存对象:', dataObject);
+                            
+                            // 执行 put 操作
+                            const putRequest = store.put(dataObject);
+                            putRequest.onsuccess = () => {
+                                console.log(`成功保存: ${dayKey}`);
+                                resolve();
+                            };
+                            putRequest.onerror = (event) => {
+                                console.error(`保存失败 [${dayKey}]:`, event.target.error);
+                                reject(event.target.error);
+                            };
+                        });
+                    });
+                    
+                    // 等待所有保存完成
+                    Promise.allSettled(savePromises).then(results => {
+                        const successful = results.filter(r => r.status === 'fulfilled').length;
+                        const failed = results.filter(r => r.status === 'rejected').length;
+                        
+                        console.log(`保存操作完成: 成功 ${successful}, 失败 ${failed}`);
+                        
+                        if (failed === 0) {
+                            showToast('数据保存成功', 'success');
+                        } else if (successful > 0) {
+                            showToast(`部分数据保存成功 (${successful}/${daysToSave.length})`, 'info');
+                        } else {
+                            showToast('所有数据保存失败', 'error');
+                        }
+                    });
+                };
+                
+                clearRequest.onerror = (event) => {
+                    console.error('清空数据失败:', event.target.error);
+                    showToast('数据保存失败：无法清空旧数据', 'error');
+                };
+                
+                transaction.onerror = (event) => {
+                    console.error('事务失败:', event.target.error);
+                };
+                
+            } catch (error) {
+                console.error('保存数据异常:', error);
+                showToast('数据保存异常，请重试', 'error');
+            }
         }
         
         // 从 IndexedDB 加载课程表数据
@@ -1160,12 +1459,10 @@ Licensed under the MIT License
             }
         }
         
-        // Toast提示功能
+        // Toast提示功能 - 支持多通知堆叠显示
+        let activeToasts = [];
+        
         function showToast(message, type = 'info') {
-            // 移除已存在的Toast
-            const existingToast = document.querySelector('.toast-notification');
-            if (existingToast) existingToast.remove();
-            
             // 确保Toast样式已添加
             if (!document.querySelector('#toast-styles')) {
                 const style = document.createElement('style');
@@ -1178,6 +1475,9 @@ Licensed under the MIT License
                         font-weight: 500;
                         border: 2px solid rgba(255, 255, 255, 0.3);
                         animation: toastSlideIn 0.3s ease-out forwards;
+                        min-width: 200px;
+                        text-align: center;
+                        transition: all 0.3s ease;
                     }
                     
                     .toast-notification.opacity-100 {
@@ -1206,10 +1506,15 @@ Licensed under the MIT License
             
             const toast = document.createElement('div');
             // 移除glass-effect，使用不透明的纯色背景以提高对比度
-            toast.className = `toast-notification fixed bottom-12 left-1/2 transform -translate-x-1/2 rounded-xl px-6 py-4 text-white z-50 transition-all duration-300 shadow-lg ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-primary'}`;
+            toast.className = `toast-notification fixed left-1/2 transform -translate-x-1/2 rounded-xl px-6 py-4 text-white z-50 transition-all duration-300 shadow-lg ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-primary'}`;
             toast.textContent = message;
             
+            // 添加到文档和活动通知列表
             document.body.appendChild(toast);
+            activeToasts.push(toast);
+            
+            // 更新所有通知的位置
+            updateToastPositions();
             
             // 显示动画已通过CSS实现
             setTimeout(() => {
@@ -1218,11 +1523,35 @@ Licensed under the MIT License
             
             // 3秒后自动关闭
             setTimeout(() => {
-                toast.classList.add('opacity-0');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
+                closeToast(toast);
             }, 3000);
+        }
+        
+        // 关闭单个通知并更新其他通知的位置
+        function closeToast(toast) {
+            toast.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                // 从DOM和活动列表中移除
+                toast.remove();
+                
+                const index = activeToasts.indexOf(toast);
+                if (index !== -1) {
+                    activeToasts.splice(index, 1);
+                }
+                
+                // 更新剩余通知的位置
+                updateToastPositions();
+            }, 300);
+        }
+        
+        // 更新所有通知的位置，实现堆叠效果
+        function updateToastPositions() {
+            activeToasts.forEach((toast, index) => {
+                // 从下往上堆叠，第一个通知在最底部
+                const bottomPosition = 12 + (index * 70); // 12rem底部边距，每个通知之间70px间隔
+                toast.style.bottom = bottomPosition + 'px';
+            });
         }
         
         // 有趣的事实数据 - 优化版（移除重复内容并扩充新知识）
@@ -1453,6 +1782,149 @@ Licensed under the MIT License
         });
         
         // 更新当前日期
+        // 班级选择模态框
+        function showClassSelectionModal() {
+            // 防止重复创建模态框
+            if (document.getElementById('class-selection-modal')) {
+                return;
+            }
+            
+            const modal = document.createElement('div');
+            modal.id = 'class-selection-modal';
+            modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="glass-effect rounded-xl p-8 max-w-lg w-full border border-white/30 shadow-xl transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+                    <h3 class="text-xl font-bold text-dark mb-6">选择班级信息</h3>
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">年级</label>
+                            <select id="grade-selector" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                                <option value="初一">初一</option>
+                                <option value="初二">初二</option>
+                                <option value="初三">初三</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">班级</label>
+                            <select id="class-selector" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300">
+                                <option value="一班">一班</option>
+                                <option value="二班">二班</option>
+                                <option value="三班">三班</option>
+                                <option value="四班">四班</option>
+                                <option value="五班">五班</option>
+                                <option value="六班">六班</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-4">
+                        <button id="cancel-selection" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100/20 transition-colors duration-300">
+                            取消
+                        </button>
+                        <button id="confirm-selection" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors duration-300">
+                            确认
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+            
+            // 显示动画
+            setTimeout(() => {
+                document.getElementById('modal-content').classList.remove('scale-95', 'opacity-0');
+                document.getElementById('modal-content').classList.add('scale-100', 'opacity-100');
+            }, 10);
+            
+            // 获取当前选择
+            const currentGrade = document.getElementById('config-class-grade').value || '初一';
+            const currentClass = document.getElementById('config-class-name').value ? 
+                document.getElementById('config-class-name').value.replace(/^\S+/, '') : '一班';
+            
+            // 设置默认选择
+            if (document.getElementById('grade-selector')) {
+                document.getElementById('grade-selector').value = currentGrade;
+            }
+            if (document.getElementById('class-selector')) {
+                document.getElementById('class-selector').value = currentClass;
+            }
+            
+            // 确认按钮事件
+            if (document.getElementById('confirm-selection')) {
+                document.getElementById('confirm-selection').addEventListener('click', function() {
+                    const selectedGrade = document.getElementById('grade-selector').value;
+                    const selectedClass = document.getElementById('class-selector').value;
+                    const fullClassName = `${selectedGrade}${selectedClass}`;
+                    
+                    // 更新显示
+                    document.getElementById('config-class-name-display').value = fullClassName;
+                    document.getElementById('config-class-name').value = fullClassName;
+                    document.getElementById('config-class-grade').value = selectedGrade;
+                    
+                    // 如果主配置中有grade选择框，也同步更新
+                    if (document.getElementById('config-grade')) {
+                        document.getElementById('config-grade').value = selectedGrade;
+                    }
+                    
+                    // 更新页面标题
+                    document.title = `${fullClassName}学情统计`;
+                    const mainTitle = document.querySelector('h1.text-gradient');
+                    if (mainTitle) {
+                        mainTitle.textContent = `${fullClassName}学情统计`;
+                    }
+                    
+                    // 保存到localStorage
+                    classConfig.classInfo.name = fullClassName;
+                    classConfig.classInfo.grade = selectedGrade;
+                    localStorage.setItem('classConfig', JSON.stringify(classConfig));
+                    
+                    closeModal();
+                    showToast('班级信息更新成功！', 'success');
+                });
+            }
+            
+            // 取消按钮事件
+            if (document.getElementById('cancel-selection')) {
+                document.getElementById('cancel-selection').addEventListener('click', closeModal);
+            }
+            
+            // 点击外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // 关闭模态框函数
+            function closeModal() {
+                const modalContent = document.getElementById('modal-content');
+                if (modalContent) {
+                    modalContent.classList.add('scale-95', 'opacity-0');
+                    modalContent.classList.remove('scale-100', 'opacity-100');
+                }
+                
+                setTimeout(() => {
+                    if (document.getElementById('class-selection-modal')) {
+                        document.body.removeChild(document.getElementById('class-selection-modal'));
+                    }
+                    document.body.style.overflow = '';
+                }, 300);
+            }
+        }
+        
+        // 初始化班级选择器点击事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const openSelector = document.getElementById('open-class-selector');
+            const displayInput = document.getElementById('config-class-name-display');
+            
+            if (openSelector) {
+                openSelector.addEventListener('click', showClassSelectionModal);
+            }
+            if (displayInput) {
+                displayInput.addEventListener('click', showClassSelectionModal);
+            }
+        });
+        
         // 更新班训显示
 function updateClassMotto() {
     const mottoElement = document.getElementById('class-motto');
@@ -1465,6 +1937,23 @@ function updateCurrentDate() {
             const now = new Date();
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
             document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+            
+            // 自动根据当前日期选择对应的星期（排除周六和周日）
+            const dayOfWeek = now.getDay();
+            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            
+            // 如果是周一到周五，自动选择对应的星期
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                const today = weekdays[dayOfWeek];
+                // 只有当页面初次加载时才自动选择日期，避免干扰用户的手动选择
+                if (!window.currentDayAutoSelected) {
+                    currentDay = today;
+                    window.currentDayAutoSelected = true;
+                    console.log(`自动选择日期: ${today}`);
+                }
+            } else {
+                console.log('当前是周末，使用默认日期');
+            }
         }
         
         // 生成学号选择器
@@ -2202,15 +2691,23 @@ function updateCurrentDate() {
                     <div class="p-6 space-y-6">
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-gray-700 mb-2">选择学号</label>
-                            <div id="modal-student-numbers" class="flex flex-wrap gap-2 max-h-64 overflow-y-auto scrollbar-hide p-3 glass-effect border border-white/30 rounded-xl"></div>
+                            <div id="modal-student-numbers" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto scrollbar-hide p-3 glass-effect border border-white/30 rounded-xl"></div>
+                        </div>
+                        
+                        <!-- 已选学号列表 -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                已选择的学号
+                                <span id="selected-count" class="ml-2 text-xs text-gray-500">(0)</span>
+                            </label>
+                            <div id="selected-students-list" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto scrollbar-hide p-3 glass-effect border border-primary/30 bg-primary/5 rounded-xl">
+                                <span class="text-gray-400 text-sm">暂无选择</span>
+                            </div>
                         </div>
                         
                         <div class="flex gap-3 p-4 glass-effect border border-white/20 rounded-xl">
                             <button id="modal-select-all-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
                                 全选
-                            </button>
-                            <button id="modal-select-range-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
-                                选择范围
                             </button>
                             <button id="modal-clear-all-btn" class="px-4 py-2 glass-effect border border-white/30 rounded-lg text-sm hover:bg-primary/10 transition-all duration-300">
                                 清空选择
@@ -2227,16 +2724,78 @@ function updateCurrentDate() {
             document.body.appendChild(modal);
         }
         
-        // 显示学生选择模态框
+        // 更新已选学生列表
+            function updateSelectedStudentsList(selectedStudents) {
+                const listContainer = document.getElementById('selected-students-list');
+                const countElement = document.getElementById('selected-count');
+                
+                // 确保元素存在
+                if (!listContainer || !countElement) return;
+                
+                // 更新计数
+                countElement.textContent = `(${selectedStudents.length})`;
+                
+                // 清空列表
+                listContainer.innerHTML = '';
+                
+                if (selectedStudents.length === 0) {
+                    // 如果没有选择学生，显示提示文本
+                    const emptyText = document.createElement('span');
+                    emptyText.className = 'text-gray-400 text-sm';
+                    emptyText.textContent = '暂无选择';
+                    listContainer.appendChild(emptyText);
+                } else {
+                    // 排序后显示选中的学生
+                    const sortedStudents = [...selectedStudents].sort((a, b) => a - b);
+                    sortedStudents.forEach(studentId => {
+                        const tag = document.createElement('span');
+                        tag.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary';
+                        tag.textContent = studentId;
+                        
+                        // 添加移除按钮
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'ml-1 text-primary hover:text-primary/70 focus:outline-none';
+                        removeBtn.textContent = '×';
+                        removeBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const modal = document.getElementById('student-selection-modal');
+                            if (modal) {
+                                const courseId = parseInt(modal.dataset.courseId);
+                                const course = scheduleData[currentDay].find(c => c.id === courseId);
+                                if (course) {
+                                    // 从已选列表中移除该学生
+                                    course.poorStudents = course.poorStudents.filter(id => id !== studentId);
+                                    // 更新UI
+                                    updateModalStudentButtons(course.poorStudents);
+                                    updateSelectedStudentsList(course.poorStudents);
+                                }
+                            }
+                        });
+                        
+                        tag.appendChild(removeBtn);
+                        listContainer.appendChild(tag);
+                    });
+                }
+            }
+            
+            // 显示学生选择模态框
         function showStudentSelectionModal(courseId) {
-            const modal = document.getElementById('student-selection-modal');
+            let modal = document.getElementById('student-selection-modal');
             if (!modal) {
                 createStudentSelectionModal();
                 bindStudentSelectionModalEvents();
+                // 重新获取创建后的模态框元素
+                modal = document.getElementById('student-selection-modal');
             }
             
-            // 保存当前课程ID
-            modal.dataset.courseId = courseId;
+            // 确保模态框存在后再访问dataset
+            if (modal) {
+                // 保存当前课程ID
+                modal.dataset.courseId = courseId;
+            } else {
+                console.error('无法创建或获取学生选择模态框');
+                return;
+            }
             
             // 获取当前课程的表现不佳学生列表
             const course = scheduleData[currentDay].find(c => c.id === courseId);
@@ -2272,10 +2831,16 @@ function updateCurrentDate() {
                         currentPoorStudents.splice(index, 1);
                         this.classList.remove('bg-primary/20', 'border-primary');
                     }
+                    
+                    // 更新已选学号列表
+                    updateSelectedStudentsList(currentPoorStudents);
                 });
                 
                 container.appendChild(button);
             }
+            
+            // 初始化已选学号列表
+            updateSelectedStudentsList(currentPoorStudents);
             
             // 显示模态框
             modal.classList.remove('hidden');
@@ -2350,55 +2915,23 @@ function updateCurrentDate() {
                     
                     // 更新UI
                     updateModalStudentButtons(course.poorStudents);
+                    updateSelectedStudentsList(course.poorStudents);
                 }
             });
             
-            document.getElementById('modal-select-range-btn').addEventListener('click', function() {
-                const courseId = parseInt(modal.dataset.courseId);
-                const course = scheduleData[currentDay].find(c => c.id === courseId);
-                if (course) {
-                    createInputModal(
-                        '选择学号范围', 
-                        '请输入学号范围（格式：开始-结束，如 1-10）', 
-                        '',
-                        (rangeInput) => {
-                            if (!rangeInput) return;
-                            
-                            const [start, end] = rangeInput.split('-').map(Number);
-                            if (isNaN(start) || isNaN(end) || start > end) {
-                                showToast('请输入有效的范围格式！', 'error');
-                                return;
-                            }
-                            
-                            // 验证范围在有效范围内
-                            if (start < classConfig.minStudentId || end > classConfig.maxStudentId) {
-                                showToast(`范围必须在 ${classConfig.minStudentId}-${classConfig.maxStudentId} 之间！`, 'error');
-                                return;
-                            }
-                            
-                            // 添加范围内的学号
-                            for (let i = start; i <= end; i++) {
-                                if (!classConfig.excludedIds.includes(i) && !course.poorStudents.includes(i)) {
-                                    course.poorStudents.push(i);
-                                }
-                            }
-                            
-                            // 更新UI
-                            updateModalStudentButtons(course.poorStudents);
-                        }
-                    );
-                }
-            });
+            // 移除范围选择功能
             
             document.getElementById('modal-clear-all-btn').addEventListener('click', function() {
                 const courseId = parseInt(modal.dataset.courseId);
                 const course = scheduleData[currentDay].find(c => c.id === courseId);
                 if (course) {
                     course.poorStudents = [];
-                    // 更新UI
                     updateModalStudentButtons([]);
+                    updateSelectedStudentsList([]);
                 }
             });
+            
+            // 移除范围内的updateSelectedStudentsList函数定义
         }
         
         // 更新模态框中的学号按钮状态
@@ -2561,39 +3094,72 @@ function updateCurrentDate() {
         
         // 删除课程
         function deleteCourse(courseId) {
-            // 确认删除操作
-            if (!confirm('确定要删除这节课吗？')) {
-                return;
-            }
+            // 创建自定义毛玻璃风格的确认弹窗
+            const confirmationModal = document.createElement('div');
+            confirmationModal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
+            confirmationModal.innerHTML = `
+                <div class="glass-effect rounded-xl p-6 max-w-md w-full border border-white/30 shadow-xl">
+                    <h3 class="text-xl font-bold text-dark mb-4">确认删除</h3>
+                    <p class="text-gray-700 mb-6">确定要删除这节课吗？</p>
+                    <div class="flex gap-3 justify-end">
+                        <button id="confirm-cancel" class="px-5 py-2.5 glass-effect border border-white/30 rounded-lg hover:bg-gray-100/50 transition-all duration-300">取消</button>
+                        <button id="confirm-delete" class="px-5 py-2.5 gradient-border bg-danger hover:bg-danger/90 text-white rounded-lg transition-all duration-300 hover:shadow-lg">确认删除</button>
+                    </div>
+                </div>
+            `;
             
-            // 获取当前星期的课程数据
-            const courses = scheduleData[currentDay];
+            // 添加到文档中
+            document.body.appendChild(confirmationModal);
+            document.body.style.overflow = 'hidden';
             
-            // 找到要删除的课程索引
-            const courseIndex = courses.findIndex(c => c.id === courseId);
+            // 绑定取消按钮事件
+            confirmationModal.querySelector('#confirm-cancel').addEventListener('click', function() {
+                document.body.removeChild(confirmationModal);
+                document.body.style.overflow = '';
+            });
             
-            if (courseIndex !== -1) {
-                // 获取要删除的元素进行动画效果
-                const container = document.getElementById('schedule-container');
-                const courseElements = container.querySelectorAll('.glass-effect.rounded-xl.p-5');
-                const elementToDelete = courseElements[courseIndex];
+            // 绑定确认删除按钮事件
+            confirmationModal.querySelector('#confirm-delete').addEventListener('click', function() {
+                document.body.removeChild(confirmationModal);
+                document.body.style.overflow = '';
                 
-                if (elementToDelete) {
-                    // 添加删除动画
-                    elementToDelete.style.transition = 'all 0.3s ease';
-                    elementToDelete.style.opacity = '0';
-                    elementToDelete.style.transform = 'translateX(20px)';
-                    elementToDelete.style.height = elementToDelete.offsetHeight + 'px';
-                }
+                // 获取当前星期的课程数据
+                const courses = scheduleData[currentDay];
                 
-                // 从数据中删除课程
-                setTimeout(() => {
-                    courses.splice(courseIndex, 1);
+                // 找到要删除的课程索引
+                const courseIndex = courses.findIndex(c => c.id === courseId);
+                
+                if (courseIndex !== -1) {
+                    // 获取要删除的元素进行动画效果
+                    const container = document.getElementById('schedule-container');
+                    const courseElements = container.querySelectorAll('.glass-effect.rounded-xl.p-5');
+                    const elementToDelete = courseElements[courseIndex];
                     
-                    // 重新生成课程表
-                    generateSchedule();
-                }, 300);
-            }
+                    if (elementToDelete) {
+                        // 添加删除动画
+                        elementToDelete.style.transition = 'all 0.3s ease';
+                        elementToDelete.style.opacity = '0';
+                        elementToDelete.style.transform = 'translateX(20px)';
+                        elementToDelete.style.height = elementToDelete.offsetHeight + 'px';
+                    }
+                    
+                    // 从数据中删除课程
+                    setTimeout(() => {
+                        courses.splice(courseIndex, 1);
+                        
+                        // 重新生成课程表
+                        generateSchedule();
+                    }, 300);
+                }
+            });
+            
+            // 添加点击外部关闭功能
+            confirmationModal.addEventListener('click', function(e) {
+                if (e.target === confirmationModal) {
+                    document.body.removeChild(confirmationModal);
+                    document.body.style.overflow = '';
+                }
+            });
         }
         
         // 绑定事件监听器
@@ -3053,7 +3619,8 @@ function updateCurrentDate() {
             
             // 准备课程数据 - 每天一列的格式
             // 获取最大课时数
-            const daysOfWeek = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+            // 只包含工作日（周一到周五），不包含周六和周日
+            const daysOfWeek = ["周一", "周二", "周三", "周四", "周五"];
             let maxCourseId = 0;
             daysOfWeek.forEach(day => {
                 if (scheduleData[day]) {
@@ -3241,7 +3808,7 @@ function updateCurrentDate() {
             // 导出文件
             const dateStr = new Date().toISOString().split('T')[0];
             XLSX.writeFile(wb, `班级统计_${dateStr}.xlsx`);
-            showToast('Excel导出成功，已优化表格格式', 'success');
+            showToast('Excel导出成功', 'success');
         }
     </script>
 </body>
