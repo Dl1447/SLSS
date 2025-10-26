@@ -93,36 +93,52 @@ Licensed under the MIT License
             }
             .star-active {
                 color: #F59E0B;
+                text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
             }
             .star-inactive {
                 color: #D1D5DB;
+                transition: color 0.3s ease;
+            }
+            .star-inactive:hover {
+                color: #F59E0B;
             }
             .glass-effect {
-                background: rgba(255, 255, 255, 0.7);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+                background: rgba(255, 255, 255, 0.75);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.25);
+                box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+                transition: all 0.3s ease;
+            }
+            .glass-effect:hover {
+                background: rgba(255, 255, 255, 0.85);
+                box-shadow: 0 12px 40px -12px rgba(31, 38, 135, 0.2);
             }
             .glass-effect-dark {
-                background: rgba(30, 41, 59, 0.7);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
+                background: rgba(30, 41, 59, 0.75);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
                 border: 1px solid rgba(255, 255, 255, 0.1);
-                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+                transition: all 0.3s ease;
+            }
+            .glass-effect-dark:hover {
+                background: rgba(30, 41, 59, 0.85);
+                box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.25);
             }
             .gradient-border {
                 position: relative;
                 border-radius: 12px;
                 z-index: 0;
+                overflow: hidden;
             }
             .gradient-border::before {
                 content: '';
                 position: absolute;
                 inset: -2px;
-                z-index: -1;
+                z-index: -2;
                 border-radius: 14px;
-                background: linear-gradient(90deg, #3B82F6, #8B5CF6, #10B981, #F59E0B);
+                background: linear-gradient(45deg, #3B82F6, #8B5CF6, #10B981, #F59E0B, #EF4444, #3B82F6);
                 background-size: 400% 400%;
                 animation: gradient-animation 15s ease infinite;
                 opacity: 0;
@@ -131,22 +147,148 @@ Licensed under the MIT License
             .gradient-border:hover::before {
                 opacity: 1;
             }
+            .gradient-border::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: -1;
+                border-radius: 12px;
+                background: inherit;
+            }
             .hover-lift {
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .hover-lift:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 12px 24px -8px rgba(59, 130, 246, 0.15);
+                transform: translateY(-6px);
+                box-shadow: 0 16px 32px -8px rgba(59, 130, 246, 0.25);
             }
             .text-gradient {
-                background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+                background: linear-gradient(90deg, #3B82F6, #8B5CF6, #10B981);
+                background-size: 300% 300%;
                 -webkit-background-clip: text;
                 background-clip: text;
                 color: transparent;
+                animation: gradient-animation 15s ease infinite;
             }
             .shine-effect {
                 background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
                 background-size: 200% 100%;
+                animation: shine 2s infinite;
+            }
+            .ripple-effect {
+                position: relative;
+                overflow: hidden;
+            }
+            .ripple-effect::after {
+                content: '';
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 70%);
+                transform: scale(0);
+                transition: transform 0.6s ease;
+            }
+            .ripple-effect:active::after {
+                transform: scale(2);
+            }
+            .pulse-card {
+                animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .float-slow {
+                animation: float 6s ease-in-out infinite;
+            }
+            .bg-pattern {
+                position: absolute;
+                inset: 0;
+                background-image: 
+                    radial-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                    radial-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px);
+                background-size: 30px 30px;
+                background-position: 0 0, 15px 15px;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+            }
+            .glass-effect:hover .bg-pattern {
+                opacity: 0.7;
+            }
+            .glass-effect-dark:hover .bg-pattern {
+                opacity: 0.3;
+            }
+            
+            /* 背景样式集合 */
+            .bg-theme-blue {
+                background: linear-gradient(135deg, #EBF4FF 0%, #DBEAFE 100%);
+            }
+            .bg-theme-purple {
+                background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+            }
+            .bg-theme-green {
+                background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+            }
+            .bg-theme-pink {
+                background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%);
+            }
+            .bg-theme-orange {
+                background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+            }
+            .bg-theme-dark {
+                background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            }
+            
+            /* 背景装饰元素动画 */
+            .bg-blob {
+                position: absolute;
+                border-radius: 50%;
+                filter: blur(80px);
+                opacity: 0.7;
+                transition: all 1s ease;
+                mix-blend-mode: overlay;
+            }
+            
+            .bg-grid {
+                background-image: 
+                    linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+                background-size: 20px 20px;
+            }
+            
+            .bg-dots {
+                background-image: radial-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+                background-size: 20px 20px;
+            }
+            
+            .bg-circuit {
+                background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233b82f6' fill-opacity='0.07'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            }
+            
+            /* 鼠标点击动画 */
+            .cursor-effect {
+                position: fixed;
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                transform: translate(-50%, -50%) scale(0);
+                transition: transform 0.4s ease-out;
+                background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(139, 92, 246, 0.6) 50%, transparent 100%);
+                mix-blend-mode: screen;
+                opacity: 0;
+                animation: cursorPop 0.6s ease-out forwards;
+            }
+            
+            .cursor-effect-sparkle {
+                position: fixed;
+                width: 4px;
+                height: 4px;
+                background: white;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                opacity: 0;
+                box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.8);
             }
         }
         
@@ -155,35 +297,536 @@ Licensed under the MIT License
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
+        
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            }
+            50% {
+                box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25);
+            }
+        }
+        
+        @keyframes shine {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes blob-move {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        
+        @keyframes bg-scroll {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+        
+        @keyframes cursorPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes sparkleFly {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-40px) rotate(360deg);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
     
-    <div class="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-100 via-transparent to-purple-100 opacity-70"></div>
-    <div class="fixed inset-0 -z-20 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-100 via-transparent to-blue-100 opacity-70"></div>
+    <!-- 自定义背景容器 -->
+    <div id="background-container" class="fixed inset-0 -z-20 bg-theme-blue transition-colors duration-1000 ease-in-out bg-grid"></div>
+    
+    <!-- 背景装饰元素 -->
+    <div id="bg-decoration-1" class="bg-blob bg-blue-400 top-[10%] left-[20%] w-[300px] h-[300px] animate-[blob-move_20s_infinite]"></div>
+    <div id="bg-decoration-2" class="bg-blob bg-purple-400 top-[40%] right-[15%] w-[400px] h-[400px] animate-[blob-move_15s_infinite_1s]"></div>
+    <div id="bg-decoration-3" class="bg-blob bg-indigo-400 bottom-[15%] left-[25%] w-[350px] h-[350px] animate-[blob-move_18s_infinite_2s]"></div>
+    <div id="bg-decoration-4" class="bg-blob bg-teal-400 bottom-[20%] right-[25%] w-[250px] h-[250px] animate-[blob-move_22s_infinite_3s]"></div>
+    
+    <!-- 背景纹理层 -->
+    <div id="bg-texture" class="fixed inset-0 -z-10 bg-dots opacity-70"></div>
+    
+    <!-- 背景控制面板 -->
+    <button id="bg-toggle-btn" class="fixed bottom-5 right-5 z-50 glass-effect p-3 rounded-full shadow-lg hover-lift transition-all duration-300">
+        <i class="fa fa-paint-brush text-primary text-xl"></i>
+    </button>
+    
+    <div id="bg-panel" class="fixed bottom-20 right-5 z-50 glass-effect p-5 rounded-2xl shadow-xl w-72 hidden">
+        <h3 class="text-lg font-semibold text-dark mb-4 flex items-center gap-2">
+            <i class="fa fa-magic text-primary"></i>
+            背景设置
+        </h3>
+        
+        <div class="space-y-4">
+            <!-- 主题选择 -->
+            <div class="text-inherit">
+                <label class="block text-sm font-medium text-inherit mb-2">主题颜色</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="changeBackgroundTheme('blue')" class="h-8 rounded-lg bg-primary/10 border-2 border-transparent hover:border-primary transition-all" title="蓝色主题"></button>
+                    <button onclick="changeBackgroundTheme('purple')" class="h-8 rounded-lg bg-accent/10 border-2 border-transparent hover:border-accent transition-all" title="紫色主题"></button>
+                    <button onclick="changeBackgroundTheme('green')" class="h-8 rounded-lg bg-secondary/10 border-2 border-transparent hover:border-secondary transition-all" title="绿色主题"></button>
+                    <button onclick="changeBackgroundTheme('pink')" class="h-8 rounded-lg bg-pink-500/10 border-2 border-transparent hover:border-pink-500 transition-all" title="粉色主题"></button>
+                    <button onclick="changeBackgroundTheme('orange')" class="h-8 rounded-lg bg-warning/10 border-2 border-transparent hover:border-warning transition-all" title="橙色主题"></button>
+                    <button onclick="changeBackgroundTheme('dark')" class="h-8 rounded-lg bg-dark border-2 border-transparent hover:border-gray-500 transition-all" title="暗色主题"></button>
+                </div>
+            </div>
+            
+            <!-- 图片上传功能 -->
+            <div class="pt-4 text-inherit">
+                <label class="block text-sm font-medium text-inherit mb-2">自定义背景图</label>
+                <div class="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary transition-all cursor-pointer relative overflow-hidden" id="image-upload-area">
+                    <input type="file" id="image-upload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+                    <i class="fa fa-upload text-2xl mb-2 text-inherit/70"></i>
+                    <p class="text-sm text-inherit/80 mb-1">点击或拖拽上传图片</p>
+                    <p id="image-upload-status" class="text-xs text-inherit/60">支持 JPG, PNG, WEBP 格式</p>
+                </div>
+                
+                <!-- 图片预览区域 -->
+                <div id="image-preview-container" class="hidden mt-3">
+                    <div class="relative rounded-lg overflow-hidden border border-inherit/30">
+                        <img id="image-preview" class="w-full h-32 object-cover" src="" alt="预览图片" />
+                        <button id="remove-image" class="absolute top-2 right-2 bg-dark/70 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-dark transition-all">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between mt-2">
+                        <button id="cancel-image" class="px-3 py-1.5 text-sm border border-inherit/30 rounded-lg hover:bg-inherit/10 transition-all">取消</button>
+                        <button id="apply-image" class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">应用背景</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 纹理选择 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">背景纹理</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="changeBackgroundTexture('none')" class="h-8 rounded-lg bg-white border border-gray-300 hover:border-primary transition-all" title="无纹理"></button>
+                    <button onclick="changeBackgroundTexture('grid')" class="h-8 rounded-lg bg-white border border-gray-300 hover:border-primary transition-all bg-grid" title="网格纹理"></button>
+                    <button onclick="changeBackgroundTexture('dots')" class="h-8 rounded-lg bg-white border border-gray-300 hover:border-primary transition-all bg-dots" title="点状纹理"></button>
+                    <button onclick="changeBackgroundTexture('circuit')" class="h-8 rounded-lg bg-white border border-gray-300 hover:border-primary transition-all bg-circuit" title="电路板纹理"></button>
+                </div>
+            </div>
+            
+            <!-- 装饰强度 -->
+            <div>
+                <label for="bg-opacity" class="block text-sm font-medium text-gray-700 mb-2">装饰透明度</label>
+                <input type="range" id="bg-opacity" min="0" max="100" value="70" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="changeBackgroundOpacity(this.value)">
+            </div>
+            
+            <!-- 重置按钮 -->
+            <button onclick="resetBackground()" class="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all text-gray-700 font-medium flex items-center justify-center gap-2">
+                <i class="fa fa-refresh"></i>
+                重置背景
+            </button>
+        </div>
+    </div>
     
     <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <script>
+        // 背景控制功能
+        const bgPanel = document.getElementById('bg-panel');
+        const bgToggleBtn = document.getElementById('bg-toggle-btn');
+        
+        // 切换背景控制面板显示
+        bgToggleBtn.addEventListener('click', () => {
+            bgPanel.classList.toggle('hidden');
+            // 添加显示/隐藏动画
+            if (!bgPanel.classList.contains('hidden')) {
+                bgPanel.style.opacity = '0';
+                bgPanel.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    bgPanel.style.opacity = '1';
+                    bgPanel.style.transform = 'translateY(0)';
+                }, 10);
+            } else {
+                bgPanel.style.opacity = '0';
+                bgPanel.style.transform = 'translateY(20px)';
+            }
+        });
+        
+        // 点击外部关闭控制面板
+        document.addEventListener('click', (e) => {
+            if (!bgPanel.contains(e.target) && e.target !== bgToggleBtn && !bgToggleBtn.contains(e.target)) {
+                bgPanel.classList.add('hidden');
+            }
+        });
+        
+        // 改变背景主题
+        function changeBackgroundTheme(theme) {
+            const bgContainer = document.getElementById('background-container');
+            
+            // 移除所有主题类和自定义背景
+            bgContainer.classList.remove('bg-theme-blue', 'bg-theme-purple', 'bg-theme-green', 'bg-theme-pink', 'bg-theme-orange', 'bg-theme-dark');
+            bgContainer.style.backgroundImage = '';
+            
+            // 添加选中的主题类
+            bgContainer.classList.add(`bg-theme-${theme}`);
+            
+            // 显示装饰元素和纹理
+            const decorations = document.querySelectorAll('.bg-blob');
+            decorations.forEach(dec => dec.style.display = 'block');
+            document.getElementById('bg-texture').style.display = 'block';
+            
+            // 根据主题调整玻璃效果和文字颜色
+            const glassElements = document.querySelectorAll('.glass-effect, .glass-effect-dark');
+            const texts = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p');
+            
+            if (theme === 'dark') {
+                glassElements.forEach(el => {
+                    el.classList.remove('glass-effect');
+                    el.classList.add('glass-effect-dark');
+                });
+                texts.forEach(text => {
+                    text.classList.remove('text-dark');
+                    text.classList.add('text-white');
+                });
+            } else {
+                glassElements.forEach(el => {
+                    el.classList.remove('glass-effect-dark');
+                    el.classList.add('glass-effect');
+                });
+                texts.forEach(text => {
+                    text.classList.remove('text-white');
+                    text.classList.add('text-dark');
+                });
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('bg-theme', theme);
+            localStorage.setItem('has-custom-bg', 'false');
+            localStorage.removeItem('bg-image');
+        }
+        
+        // 改变背景纹理
+        function changeBackgroundTexture(texture) {
+            const bgTexture = document.getElementById('bg-texture');
+            
+            // 移除所有纹理类
+            bgTexture.classList.remove('bg-grid', 'bg-dots', 'bg-circuit');
+            
+            if (texture !== 'none') {
+                bgTexture.classList.add(`bg-${texture}`);
+                bgTexture.style.display = 'block';
+            } else {
+                bgTexture.style.display = 'none';
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('bg-texture', texture);
+        }
+        
+        // 改变背景装饰透明度
+        function changeBackgroundOpacity(opacity) {
+            const decorations = document.querySelectorAll('.bg-blob');
+            const bgTexture = document.getElementById('bg-texture');
+            
+            decorations.forEach(dec => {
+                dec.style.opacity = opacity / 100;
+            });
+            
+            bgTexture.style.opacity = opacity / 100;
+            
+            // 保存到本地存储
+            localStorage.setItem('bg-opacity', opacity);
+        }
+        
+        // 重置背景
+        function resetBackground() {
+            changeBackgroundTheme('blue');
+            changeBackgroundTexture('dots');
+            document.getElementById('bg-opacity').value = 70;
+            changeBackgroundOpacity(70);
+        }
+        
+        // 初始化背景设置
+        function initBackground() {
+            // 从本地存储加载设置，如果没有则使用默认值
+            const savedTheme = localStorage.getItem('bg-theme') || 'blue';
+            const savedTexture = localStorage.getItem('bg-texture') || 'dots';
+            const savedOpacity = localStorage.getItem('bg-opacity') || 70;
+            
+            changeBackgroundTheme(savedTheme);
+            changeBackgroundTexture(savedTexture);
+            document.getElementById('bg-opacity').value = savedOpacity;
+            changeBackgroundOpacity(savedOpacity);
+            
+            // 设置面板过渡动画
+            bgPanel.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        }
+        
+        // 页面加载完成后初始化背景
+        document.addEventListener('DOMContentLoaded', initBackground);
+        
+        // 鼠标点击动画效果
+        function initCursorEffect() {
+            // 防止动画在移动设备上运行，避免性能问题
+            if (window.innerWidth <= 768) return;
+            
+            document.addEventListener('click', function(e) {
+                // 创建主要点击效果
+                const effect = document.createElement('div');
+                effect.classList.add('cursor-effect');
+                effect.style.left = `${e.clientX}px`;
+                effect.style.top = `${e.clientY}px`;
+                
+                // 根据背景主题调整动画颜色
+                const currentTheme = localStorage.getItem('bg-theme') || 'blue';
+                let gradientColors = '';
+                
+                switch(currentTheme) {
+                    case 'purple':
+                        gradientColors = 'rgba(139, 92, 246, 0.8) 0%, rgba(168, 85, 247, 0.6) 50%';
+                        break;
+                    case 'green':
+                        gradientColors = 'rgba(16, 185, 129, 0.8) 0%, rgba(34, 197, 94, 0.6) 50%';
+                        break;
+                    case 'pink':
+                        gradientColors = 'rgba(236, 72, 153, 0.8) 0%, rgba(244, 114, 182, 0.6) 50%';
+                        break;
+                    case 'orange':
+                        gradientColors = 'rgba(245, 158, 11, 0.8) 0%, rgba(249, 115, 22, 0.6) 50%';
+                        break;
+                    case 'dark':
+                        gradientColors = 'rgba(96, 165, 250, 0.8) 0%, rgba(59, 130, 246, 0.6) 50%';
+                        break;
+                    default:
+                        gradientColors = 'rgba(59, 130, 246, 0.8) 0%, rgba(139, 92, 246, 0.6) 50%';
+                }
+                
+                effect.style.background = `radial-gradient(circle, ${gradientColors}, transparent 100%)`;
+                document.body.appendChild(effect);
+                
+                // 创建火花效果
+                createSparkles(e.clientX, e.clientY, 8);
+                
+                // 移除元素
+                setTimeout(() => {
+                    effect.remove();
+                }, 600);
+            });
+        }
+        
+        // 创建火花粒子
+        function createSparkles(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('cursor-effect-sparkle');
+                
+                // 随机位置偏移
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * 20 + 10;
+                const offsetX = Math.cos(angle) * distance;
+                const offsetY = Math.sin(angle) * distance;
+                
+                sparkle.style.left = `${x + offsetX}px`;
+                sparkle.style.top = `${y + offsetY}px`;
+                
+                // 随机动画持续时间和延迟
+                const duration = Math.random() * 0.5 + 0.5;
+                const delay = Math.random() * 0.2;
+                
+                sparkle.style.animation = `sparkleFly ${duration}s ease-out ${delay}s forwards`;
+                
+                // 随机颜色
+                const colors = ['#ffffff', '#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                sparkle.style.background = randomColor;
+                sparkle.style.boxShadow = `0 0 8px 2px ${randomColor}aa`;
+                
+                document.body.appendChild(sparkle);
+                
+                setTimeout(() => {
+                    sparkle.remove();
+                }, (duration + delay) * 1000);
+            }
+        }
+        
+        // 初始化鼠标点击效果
+        document.addEventListener('DOMContentLoaded', initCursorEffect);
+        
+        // 初始化图片上传功能
+        function initImageUpload() {
+            const uploadInput = document.getElementById('image-upload');
+            const previewContainer = document.getElementById('image-preview-container');
+            const imagePreview = document.getElementById('image-preview');
+            const uploadArea = document.getElementById('image-upload-area');
+            const uploadStatus = document.getElementById('image-upload-status');
+            const removeBtn = document.getElementById('remove-image');
+            const cancelBtn = document.getElementById('cancel-image');
+            const applyBtn = document.getElementById('apply-image');
+            
+            let uploadedFile = null;
+            
+            // 处理文件选择
+            uploadInput.addEventListener('change', handleFileSelect);
+            
+            // 处理拖拽上传
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('border-primary');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('border-primary');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('border-primary');
+                
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // 点击上传区域触发文件选择
+            uploadArea.addEventListener('click', () => {
+                if (!previewContainer.classList.contains('hidden')) return;
+                uploadInput.click();
+            });
+            
+            // 移除图片
+            removeBtn.addEventListener('click', resetImageUpload);
+            cancelBtn.addEventListener('click', resetImageUpload);
+            
+            // 应用背景图片
+            applyBtn.addEventListener('click', () => {
+                if (uploadedFile) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // 应用背景图片
+                        const bgContainer = document.getElementById('background-container');
+                        bgContainer.style.backgroundImage = `url('${e.target.result}')`;
+                        bgContainer.style.backgroundSize = 'cover';
+                        bgContainer.style.backgroundPosition = 'center';
+                        
+                        // 隐藏装饰元素
+                        const decorations = document.querySelectorAll('.bg-blob');
+                        decorations.forEach(dec => dec.style.display = 'none');
+                        
+                        // 隐藏纹理
+                        document.getElementById('bg-texture').style.display = 'none';
+                        
+                        // 保存设置
+                        localStorage.setItem('bg-image', e.target.result);
+                        localStorage.setItem('has-custom-bg', 'true');
+                        
+                        // 显示成功消息
+                        uploadStatus.textContent = '背景图片已应用！';
+                        uploadStatus.style.color = 'rgb(16 185 129)';
+                        
+                        resetImageUpload();
+                    };
+                    reader.readAsDataURL(uploadedFile);
+                }
+            });
+            
+            function handleFileSelect(e) {
+                if (e.target.files && e.target.files[0]) {
+                    handleFile(e.target.files[0]);
+                }
+            }
+            
+            function handleFile(file) {
+                // 检查文件类型
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    uploadStatus.textContent = '不支持的文件类型，请上传JPG、PNG或WEBP格式';
+                    uploadStatus.style.color = 'rgb(239 68 68)';
+                    return;
+                }
+                
+                uploadedFile = file;
+                
+                // 显示预览
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    previewContainer.classList.remove('hidden');
+                    uploadStatus.textContent = `已选择: ${file.name}`;
+                    uploadStatus.style.color = '';
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function resetImageUpload() {
+                uploadInput.value = '';
+                previewContainer.classList.add('hidden');
+                imagePreview.src = '';
+                uploadedFile = null;
+                uploadStatus.textContent = '支持 JPG, PNG, WEBP 格式';
+                uploadStatus.style.color = '';
+            }
+            
+            // 初始化时检查是否有保存的自定义背景
+            const hasCustomBg = localStorage.getItem('has-custom-bg') === 'true';
+            const savedBgImage = localStorage.getItem('bg-image');
+            
+            if (hasCustomBg && savedBgImage) {
+                const bgContainer = document.getElementById('background-container');
+                bgContainer.style.backgroundImage = `url('${savedBgImage}')`;
+                bgContainer.style.backgroundSize = 'cover';
+                bgContainer.style.backgroundPosition = 'center';
+                
+                // 隐藏装饰元素和纹理
+                const decorations = document.querySelectorAll('.bg-blob');
+                decorations.forEach(dec => dec.style.display = 'none');
+                document.getElementById('bg-texture').style.display = 'none';
+            }
+        }
+        
+        // 在背景初始化后初始化图片上传
+        document.addEventListener('DOMContentLoaded', function() {
+            // 等待背景初始化完成
+            setTimeout(initImageUpload, 100);
+        });
+    </script>
         
         <header class="mb-8 flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-xl overflow-hidden glass-effect flex items-center justify-center hover-lift transition-all duration-300">
-                    <img src="bjbz.png" alt="班级Logo" class="w-12 h-12 object-contain">
+                <div class="w-20 h-20 rounded-2xl overflow-hidden glass-effect flex items-center justify-center hover-lift transition-all duration-300 shadow-lg float-slow">
+                    <img src="bjbz.png" alt="班级Logo" class="w-14 h-14 object-contain transition-transform duration-700 hover:scale-110">
                 </div>
                 <div>
-                    <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-gradient mb-2 animate-pulse-slow">初一二班学情统计</h1>
-                    <p id="class-motto" class="text-accent italic"></p>
+                    <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-gradient mb-2 tracking-tight">初一二班学情统计</h1>
+                    <p id="class-motto" class="text-accent italic text-lg transition-all duration-500 hover:text-indigo-600"></p>
                 </div>
             </div>
         </header>
 
-        <div class="glass-effect rounded-2xl shadow-xl overflow-hidden mb-8 hover-lift">
+        <div class="glass-effect rounded-2xl shadow-xl overflow-hidden mb-8 hover-lift pulse-card">
+            <div class="bg-pattern"></div>
             
             <div class="p-5 flex justify-between items-center border-b border-white/20">
                 <div class="flex items-center gap-3">
                     <i class="fa fa-calendar text-primary text-2xl animate-pulse-slow"></i>
                     <h2 id="current-date" class="text-2xl font-semibold text-dark"></h2>
                 </div>
-                <button id="export-excel" class="gradient-border bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg">
+                <button id="export-excel" class="gradient-border bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg ripple-effect">
                     <i class="fa fa-download"></i>
                     <span>导出Excel</span>
                 </button>
@@ -204,10 +847,10 @@ Licensed under the MIT License
                             <div class="mb-6">
                                 <label for="subject-select-btn" class="block text-sm font-medium text-gray-700 mb-2">选择科目</label>
                                 <div class="relative">
-                                    <button id="subject-select-btn" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 text-left flex justify-between items-center">
-                                        <span id="selected-subject-text">请选择科目</span>
-                                        <i class="fa fa-chevron-down text-gray-500"></i>
-                                    </button>
+                                    <button id="subject-select-btn" class="w-full px-4 py-3 glass-effect border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300 text-left flex justify-between items-center ripple-effect hover:scale-[1.02] active:scale-[0.98]">
+                            <span id="selected-subject-text">请选择科目</span>
+                            <i class="fa fa-chevron-down text-gray-500 transition-transform duration-300"></i>
+                        </button>
                                 </div>
                             </div>
                             
@@ -226,7 +869,7 @@ Licensed under the MIT License
                             </div>
                             
                             
-                            <button id="add-homework-record" class="w-full gradient-border bg-secondary hover:bg-secondary/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg mb-6">
+                            <button id="add-homework-record" class="w-full gradient-border bg-secondary hover:bg-secondary/90 text-white py-3 rounded-xl transition-all duration-300 hover:shadow-lg mb-6 ripple-effect hover:scale-[1.02] active:scale-[0.98]">
                                 添加未交作业记录
                             </button>
                             
@@ -250,18 +893,18 @@ Licensed under the MIT License
                         
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">选择星期</label>
-                            <div class="flex flex-wrap gap-2">
-                                <button class="day-btn gradient-border bg-primary text-white px-5 py-3 rounded-xl transition-all duration-300 hover:shadow-lg" data-day="周一">周一</button>
-                                <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周二">周二</button>
-                                <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周三">周三</button>
-                                <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周四">周四</button>
-                                <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300" data-day="周五">周五</button>
-                            </div>
+                            <div class="flex flex-wrap gap-3">
+                            <button class="day-btn gradient-border bg-primary text-white px-5 py-3 rounded-xl transition-all duration-300 hover:shadow-lg ripple-effect hover:scale-[1.05] active:scale-[0.95]" data-day="周一">周一</button>
+                            <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300 ripple-effect hover:scale-[1.05] active:scale-[0.95]" data-day="周二">周二</button>
+                            <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300 ripple-effect hover:scale-[1.05] active:scale-[0.95]" data-day="周三">周三</button>
+                            <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300 ripple-effect hover:scale-[1.05] active:scale-[0.95]" data-day="周四">周四</button>
+                            <button class="day-btn glass-effect border border-white/30 hover:bg-primary/10 px-5 py-3 rounded-xl transition-all duration-300 ripple-effect hover:scale-[1.05] active:scale-[0.95]" data-day="周五">周五</button>
+                        </div>
                         </div>
                         
                         
                         <div class="mb-4">
-                            <button id="add-new-course" class="gradient-border bg-secondary hover:bg-secondary/90 text-white px-5 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2">
+                            <button id="add-new-course" class="gradient-border bg-secondary hover:bg-secondary/90 text-white px-5 py-3 rounded-xl transition-all duration-300 hover:shadow-lg flex items-center gap-2 ripple-effect hover:scale-[1.02] active:scale-[0.98]">
                                 <i class="fa fa-plus"></i>
                                 <span>添加新课</span>
                             </button>
@@ -278,20 +921,29 @@ Licensed under the MIT License
         
         
         <!-- 你知道吗栏目 -->
-        <div class="glass-effect rounded-2xl shadow-xl overflow-hidden mb-8 hover-lift">
+        <div class="glass-effect rounded-2xl shadow-xl overflow-hidden mb-8 hover-lift pulse-card">
+            <div class="bg-pattern"></div>
             <div class="p-5 border-b border-white/20 flex justify-between items-center">
                 <h3 class="text-xl font-semibold text-dark flex items-center gap-2">
                     <i class="fa fa-lightbulb-o text-warning animate-pulse-slow"></i>
                     你知道吗？ (我不知道)
                 </h3>
-                <button id="fun-fact-refresh" class="gradient-border bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg">
+                <button id="fun-fact-refresh" class="gradient-border bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 hover:shadow-lg ripple-effect hover:scale-[1.05] active:scale-[0.95]">
                     <i class="fa fa-refresh"></i>
                     <span>查看新知识</span>
                 </button>
             </div>
             <div class="p-6">
-                <div class="glass-effect-dark text-white p-6 rounded-xl mb-4 transition-all duration-300 hover:shadow-lg">
-                    <p id="fun-fact-content" class="text-lg leading-relaxed"></p>
+                <div class="bg-gradient-to-r from-dark/80 to-primary/80 text-white p-8 rounded-xl mb-4 transition-all duration-500 hover:shadow-xl shadow-inner relative overflow-hidden border-2 border-white/20">
+                    <!-- 装饰元素 -->
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-warning/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div class="absolute bottom-0 left-0 w-32 h-32 bg-secondary/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+                    
+                    <!-- 强调文字 -->
+                    <p id="fun-fact-content" class="text-xl md:text-2xl font-semibold leading-relaxed relative z-10 tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80 pb-2 border-b border-white/10">
+                        <span class="text-warning text-2xl md:text-3xl font-bold">💡</span>
+                        环境因素对学习有显著影响，适宜的温度(20-22°C)和充足的自然光能提高学习效率。
+                    </p>
                 </div>
                 <div class="mt-4 text-right flex justify-between items-center">
                     <span class="text-sm text-gray-600 italic">点击上方按钮获取新知识，或等待自动刷新</span>
