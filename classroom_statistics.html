@@ -102,6 +102,20 @@ Licensed under the MIT License
             .star-inactive:hover {
                 color: #F59E0B;
             }
+            .star-half {
+                color: #D1D5DB;
+                position: relative;
+            }
+            .star-half::after {
+                content: '\f005';
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 50%;
+                overflow: hidden;
+                color: #F59E0B;
+                text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+            }
             .glass-effect {
                 background: rgba(255, 255, 255, 0.75);
                 backdrop-filter: blur(16px);
@@ -357,6 +371,30 @@ Licensed under the MIT License
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <!-- iOS原生风格灵动岛组件 - 持续显示模式 -->
+    <div id="dynamic-island" class="fixed top-[4px] left-1/2 transform -translate-x-1/2 z-[60] transition-all duration-[400ms] cubic-bezier(0.25, 0.1, 0.25, 1) pointer-events-auto">
+        <div class="bg-black/60 backdrop-blur-xl dark:bg-white/8 rounded-[28px] px-5 py-3 flex items-center gap-3 shadow-[0_4px_24px_rgba(0,0,0,0.3)] min-w-[180px]">
+            <!-- 通知图标 -->
+            <div id="island-icon" class="w-9 h-9 rounded-full bg-primary/16 flex items-center justify-center text-primary">
+                <i class="fa fa-bell-o"></i>
+            </div>
+            
+            <!-- 通知内容 -->
+            <div id="island-content" class="text-white text-sm font-medium tracking-wide">
+                通知内容将在这里显示
+            </div>
+            
+            <!-- 操作按钮区域 -->
+            <div id="island-actions" class="flex items-center gap-3 hidden">
+                <button id="island-btn-1" class="px-4 py-1.75 text-xs font-medium rounded-full bg-white/16 hover:bg-white/24 transition-all duration-[200ms] active:scale-97">
+                    确定
+                </button>
+                <button id="island-btn-2" class="px-4 py-1.75 text-xs font-medium rounded-full bg-white/16 hover:bg-white/24 transition-all duration-[200ms] active:scale-97">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- 自定义背景容器 -->
     <div id="background-container" class="fixed inset-0 -z-20 bg-theme-blue transition-colors duration-1000 ease-in-out bg-grid"></div>
@@ -413,9 +451,9 @@ Licensed under the MIT License
                             <i class="fa fa-times"></i>
                         </button>
                     </div>
-                    <div class="flex justify-between mt-2">
-                        <button id="cancel-image" class="px-3 py-1.5 text-sm border border-inherit/30 rounded-lg hover:bg-inherit/10 transition-all">取消</button>
-                        <button id="apply-image" class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">应用背景</button>
+                    <div class="mt-2 text-center">
+                        <p class="text-xs text-inherit/70">图片正在自动保存中...</p>
+                        <button id="cancel-image" class="px-3 py-1.5 text-sm mt-1 border border-inherit/30 rounded-lg hover:bg-inherit/10 transition-all">取消</button>
                     </div>
                 </div>
             </div>
@@ -568,9 +606,15 @@ Licensed under the MIT License
             const savedTheme = localStorage.getItem('bg-theme') || 'blue';
             const savedTexture = localStorage.getItem('bg-texture') || 'dots';
             const savedOpacity = localStorage.getItem('bg-opacity') || 70;
+            const hasCustomBg = localStorage.getItem('has-custom-bg') === 'true';
             
-            changeBackgroundTheme(savedTheme);
-            changeBackgroundTexture(savedTexture);
+            // 如果没有自定义背景图，才应用主题和纹理
+            if (!hasCustomBg) {
+                changeBackgroundTheme(savedTheme);
+                changeBackgroundTexture(savedTexture);
+            }
+            
+            // 始终应用透明度设置
             document.getElementById('bg-opacity').value = savedOpacity;
             changeBackgroundOpacity(savedOpacity);
             
@@ -704,7 +748,9 @@ Licensed under the MIT License
             });
             
             // 点击上传区域触发文件选择
-            uploadArea.addEventListener('click', () => {
+            uploadArea.addEventListener('click', (e) => {
+                // 检查点击目标是否是input元素，如果是则不重复触发
+                if (e.target === uploadInput) return;
                 if (!previewContainer.classList.contains('hidden')) return;
                 uploadInput.click();
             });
@@ -713,37 +759,41 @@ Licensed under the MIT License
             removeBtn.addEventListener('click', resetImageUpload);
             cancelBtn.addEventListener('click', resetImageUpload);
             
-            // 应用背景图片
-            applyBtn.addEventListener('click', () => {
-                if (uploadedFile) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        // 应用背景图片
-                        const bgContainer = document.getElementById('background-container');
-                        bgContainer.style.backgroundImage = `url('${e.target.result}')`;
-                        bgContainer.style.backgroundSize = 'cover';
-                        bgContainer.style.backgroundPosition = 'center';
-                        
-                        // 隐藏装饰元素
-                        const decorations = document.querySelectorAll('.bg-blob');
-                        decorations.forEach(dec => dec.style.display = 'none');
-                        
-                        // 隐藏纹理
-                        document.getElementById('bg-texture').style.display = 'none';
-                        
-                        // 保存设置
-                        localStorage.setItem('bg-image', e.target.result);
-                        localStorage.setItem('has-custom-bg', 'true');
-                        
-                        // 显示成功消息
-                        uploadStatus.textContent = '背景图片已应用！';
-                        uploadStatus.style.color = 'rgb(16 185 129)';
-                        
-                        resetImageUpload();
-                    };
-                    reader.readAsDataURL(uploadedFile);
+            // 自动应用并保存背景图片
+            function autoApplyBackground(imageDataUrl) {
+                // 应用背景图片
+                const bgContainer = document.getElementById('background-container');
+                bgContainer.style.backgroundImage = `url('${imageDataUrl}')`;
+                bgContainer.style.backgroundSize = 'cover';
+                bgContainer.style.backgroundPosition = 'center';
+                
+                // 隐藏装饰元素
+                const decorations = document.querySelectorAll('.bg-blob');
+                decorations.forEach(dec => dec.style.display = 'none');
+                
+                // 隐藏纹理
+                document.getElementById('bg-texture').style.display = 'none';
+                
+                // 保存设置到本地存储
+                localStorage.setItem('bg-image', imageDataUrl);
+                localStorage.setItem('has-custom-bg', 'true');
+                
+                // 显示成功消息
+                uploadStatus.textContent = '背景图片已自动保存！';
+                uploadStatus.style.color = 'rgb(16 185 129)';
+                
+                // 显示通知
+                if (window.showNotification) {
+                    showNotification({
+                        message: '背景图片保存成功！',
+                        type: 'success',
+                        duration: 3000
+                    });
                 }
-            });
+                
+                // 延迟重置上传区域，让用户有时间看到成功消息
+                setTimeout(resetImageUpload, 1500);
+            }
             
             function handleFileSelect(e) {
                 if (e.target.files && e.target.files[0]) {
@@ -762,13 +812,18 @@ Licensed under the MIT License
                 
                 uploadedFile = file;
                 
-                // 显示预览
+                // 显示预览并自动应用
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
+                    const imageDataUrl = e.target.result;
+                    // 显示预览
+                    imagePreview.src = imageDataUrl;
                     previewContainer.classList.remove('hidden');
-                    uploadStatus.textContent = `已选择: ${file.name}`;
+                    uploadStatus.textContent = `正在处理: ${file.name}...`;
                     uploadStatus.style.color = '';
+                    
+                    // 自动应用并保存背景
+                    autoApplyBackground(imageDataUrl);
                 };
                 reader.readAsDataURL(file);
             }
@@ -787,35 +842,521 @@ Licensed under the MIT License
             const savedBgImage = localStorage.getItem('bg-image');
             
             if (hasCustomBg && savedBgImage) {
-                const bgContainer = document.getElementById('background-container');
-                bgContainer.style.backgroundImage = `url('${savedBgImage}')`;
-                bgContainer.style.backgroundSize = 'cover';
-                bgContainer.style.backgroundPosition = 'center';
+                // 使用Image对象预加载并验证背景图
+                const img = new Image();
+                img.onload = function() {
+                    // 图片加载成功，应用背景
+                    const bgContainer = document.getElementById('background-container');
+                    bgContainer.style.backgroundImage = `url('${savedBgImage}')`;
+                    bgContainer.style.backgroundSize = 'cover';
+                    bgContainer.style.backgroundPosition = 'center';
+                    
+                    // 隐藏装饰元素和纹理
+                    const decorations = document.querySelectorAll('.bg-blob');
+                    decorations.forEach(dec => dec.style.display = 'none');
+                    document.getElementById('bg-texture').style.display = 'none';
+                };
                 
-                // 隐藏装饰元素和纹理
-                const decorations = document.querySelectorAll('.bg-blob');
-                decorations.forEach(dec => dec.style.display = 'none');
-                document.getElementById('bg-texture').style.display = 'none';
+                img.onerror = function() {
+                    // 图片加载失败，清除存储并回退到默认背景
+                    console.warn('保存的背景图片无法加载，已回退到默认背景');
+                    localStorage.removeItem('bg-image');
+                    localStorage.removeItem('has-custom-bg');
+                    
+                    // 应用默认背景
+                    const bgContainer = document.getElementById('background-container');
+                    bgContainer.style.backgroundImage = '';
+                    
+                    // 显示装饰元素和纹理
+                    const decorations = document.querySelectorAll('.bg-blob');
+                    decorations.forEach(dec => dec.style.display = 'block');
+                    document.getElementById('bg-texture').style.display = 'block';
+                    
+                    // 显示通知
+                    if (window.showNotification) {
+                        showNotification({
+                            message: '保存的背景图片无法加载，已重置为默认背景',
+                            type: 'warning',
+                            duration: 3000
+                        });
+                    }
+                };
+                
+                // 设置图片源开始加载
+                img.src = savedBgImage;
             }
         }
         
         // 在背景初始化后初始化图片上传
-        document.addEventListener('DOMContentLoaded', function() {
+        // 使用命名函数避免重复绑定
+        function initImageUploadOnLoad() {
+            // 只执行一次初始化
+            if (window.imageUploadInitialized) return;
+            window.imageUploadInitialized = true;
+            
             // 等待背景初始化完成
             setTimeout(initImageUpload, 100);
-        });
+        }
+        
+        // 确保只绑定一次DOMContentLoaded事件
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initImageUploadOnLoad);
+        } else {
+            // 如果DOM已加载完成，直接执行
+            initImageUploadOnLoad();
+        }
+        
+        // 初始化iOS原生风格灵动岛组件
+        function initDynamicIsland() {
+            // iOS风格通知类型配置 - 更贴近原生系统的颜色方案
+            const NOTIFICATION_TYPES = {
+                info: { 
+                    icon: 'fa-info-circle', 
+                    color: 'blue-500/16', 
+                    textColor: 'blue-400',
+                    gradient: 'linear-gradient(to right, rgba(59, 130, 246, 0.16), rgba(59, 130, 246, 0.1))'
+                },
+                success: { 
+                    icon: 'fa-check-circle', 
+                    color: 'green-500/16', 
+                    textColor: 'green-400',
+                    gradient: 'linear-gradient(to right, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.1))'
+                },
+                warning: { 
+                    icon: 'fa-exclamation-circle', 
+                    color: 'yellow-500/16', 
+                    textColor: 'yellow-400',
+                    gradient: 'linear-gradient(to right, rgba(234, 179, 8, 0.16), rgba(234, 179, 8, 0.1))'
+                },
+                error: { 
+                    icon: 'fa-times-circle', 
+                    color: 'red-500/16', 
+                    textColor: 'red-400',
+                    gradient: 'linear-gradient(to right, rgba(239, 68, 68, 0.16), rgba(239, 68, 68, 0.1))'
+                },
+                message: { 
+                    icon: 'fa-comment', 
+                    color: 'indigo-500/16', 
+                    textColor: 'indigo-400',
+                    gradient: 'linear-gradient(to right, rgba(99, 102, 241, 0.16), rgba(99, 102, 241, 0.1))'
+                },
+                update: { 
+                    icon: 'fa-refresh', 
+                    color: 'purple-500/16', 
+                    textColor: 'purple-400',
+                    gradient: 'linear-gradient(to right, rgba(139, 92, 246, 0.16), rgba(139, 92, 246, 0.1))'
+                }
+            };
+            
+            const island = document.getElementById('dynamic-island');
+            const islandDiv = island.querySelector('div');
+            const islandIcon = document.getElementById('island-icon');
+            const islandContent = document.getElementById('island-content');
+            const islandActions = document.getElementById('island-actions');
+            const btn1 = document.getElementById('island-btn-1');
+            const btn2 = document.getElementById('island-btn-2');
+            
+            let currentTimeout = null;
+            let isExpanded = false;
+            
+            // 触觉反馈模拟（iOS风格）
+            function triggerHapticFeedback(intensity = 'light') {
+                // 在支持的设备上尝试振动反馈
+                if ('vibrate' in navigator) {
+                    const patterns = {
+                        light: 10,
+                        medium: 20,
+                        heavy: 30
+                    };
+                    navigator.vibrate(patterns[intensity] || 10);
+                }
+            }
+            
+            // 显示通知 - iOS风格展开动画（优化版）
+            window.showNotification = function(options) {
+                // 清除之前的定时器
+                if (currentTimeout) {
+                    clearTimeout(currentTimeout);
+                }
+                
+                // 默认选项
+                const defaults = {
+                    message: '通知消息',
+                    type: 'info',
+                    duration: 3000,
+                    showActions: false,
+                    btn1Text: '确定',
+                    btn2Text: '取消',
+                    onBtn1Click: null,
+                    onBtn2Click: null,
+                    onClose: null,
+                    haptic: true
+                };
+                
+                const config = { ...defaults, ...options };
+                
+                // 触发触觉反馈
+                if (config.haptic) {
+                    triggerHapticFeedback('light');
+                }
+                
+                // 获取通知类型配置
+                const notificationType = NOTIFICATION_TYPES[config.type] || NOTIFICATION_TYPES.info;
+                
+                // 判断当前是否有显示的通知，如果有则先淡出
+                const isCurrentlyVisible = island.style.opacity === '1' || island.style.opacity === '';
+                
+                if (isCurrentlyVisible) {
+                    // 淡出当前内容
+                    island.style.opacity = '0.7';
+                    islandDiv.style.transform = 'scale(0.98)';
+                    
+                    // 在淡出过程中更新内容
+                    setTimeout(() => {
+                        // 移除旧的样式类
+                        const oldClasses = Array.from(islandIcon.classList).filter(cls => 
+                            cls.includes('bg-') || cls.includes('text-')
+                        );
+                        oldClasses.forEach(cls => islandIcon.classList.remove(cls));
+                        
+                        // 设置新的样式类和图标
+                        islandIcon.classList.add(`bg-${notificationType.color}`);
+                        islandIcon.classList.add(`text-${notificationType.textColor}`);
+                        islandIcon.style.backgroundImage = notificationType.gradient;
+                        islandIcon.innerHTML = `<i class="fa ${notificationType.icon}"></i>`;
+                        
+                        // 设置文本内容
+                        islandContent.textContent = config.message;
+                        
+                        // 设置操作按钮
+                        if (config.showActions) {
+                            btn1.textContent = config.btn1Text;
+                            btn2.textContent = config.btn2Text;
+                            islandActions.classList.remove('hidden');
+                            
+                            // 绑定按钮事件
+                            btn1.onclick = function() {
+                                triggerHapticFeedback('medium');
+                                if (typeof config.onBtn1Click === 'function') {
+                                    config.onBtn1Click();
+                                }
+                                closeNotification(config.onClose);
+                            };
+                            
+                            btn2.onclick = function() {
+                                triggerHapticFeedback('medium');
+                                if (typeof config.onBtn2Click === 'function') {
+                                    config.onBtn2Click();
+                                }
+                                closeNotification(config.onClose);
+                            };
+                        } else {
+                            islandActions.classList.add('hidden');
+                        }
+                        
+                        // 淡入新内容 - 添加缩放动画使切换更丝滑
+                        island.style.opacity = '1';
+                        islandDiv.style.transform = 'scale(1.01)';
+                        
+                        // 微妙的回弹效果
+                        setTimeout(() => {
+                            islandDiv.style.transform = 'scale(1)';
+                        }, 120);
+                    }, 120);
+                } else {
+                    // 首次显示或当前不可见时，直接设置内容并显示
+                    // 移除旧的样式类
+                    const oldClasses = Array.from(islandIcon.classList).filter(cls => 
+                        cls.includes('bg-') || cls.includes('text-')
+                    );
+                    oldClasses.forEach(cls => islandIcon.classList.remove(cls));
+                    
+                    // 设置新的样式类和图标
+                    islandIcon.classList.add(`bg-${notificationType.color}`);
+                    islandIcon.classList.add(`text-${notificationType.textColor}`);
+                    islandIcon.style.backgroundImage = notificationType.gradient;
+                    islandIcon.innerHTML = `<i class="fa ${notificationType.icon}"></i>`;
+                    
+                    // 设置文本内容
+                    islandContent.textContent = config.message;
+                    
+                    // 设置操作按钮
+                    if (config.showActions) {
+                        btn1.textContent = config.btn1Text;
+                        btn2.textContent = config.btn2Text;
+                        islandActions.classList.remove('hidden');
+                        
+                        // 绑定按钮事件
+                        btn1.onclick = function() {
+                            triggerHapticFeedback('medium');
+                            if (typeof config.onBtn1Click === 'function') {
+                                config.onBtn1Click();
+                            }
+                            closeNotification(config.onClose);
+                        };
+                        
+                        btn2.onclick = function() {
+                            triggerHapticFeedback('medium');
+                            if (typeof config.onBtn2Click === 'function') {
+                                config.onBtn2Click();
+                            }
+                            closeNotification(config.onClose);
+                        };
+                    } else {
+                        islandActions.classList.add('hidden');
+                    }
+                    
+                    // 重置样式
+                    island.style.opacity = '0';
+                    island.style.transform = 'translate(-50%, 10px) scale(0.95)';
+                    
+                    // 强制重绘
+                    void island.offsetWidth;
+                    
+                    // 显示通知 - iOS风格展开动画
+                    setTimeout(() => {
+                        island.style.pointerEvents = 'auto';
+                        island.style.opacity = '1';
+                        island.style.transform = 'translate(-50%, 0) scale(1)';
+                        
+                        // iOS风格的微妙缩放动画
+                        setTimeout(() => {
+                            islandDiv.style.transform = 'scale(1.01)';
+                            setTimeout(() => {
+                                islandDiv.style.transform = 'scale(1)';
+                            }, 100);
+                        }, 200);
+                    }, 10);
+                }
+                
+                // 持续显示模式 - 移除自动关闭逻辑
+                // 如果设置了强制关闭，则执行
+                if (config.forceClose) {
+                    currentTimeout = setTimeout(() => {
+                        closeNotification(config.onClose);
+                    }, config.duration);
+                }
+            };
+            
+            // 关闭通知 - iOS风格收起动画
+            function closeNotification(onClose) {
+                // iOS风格的收起动画
+                island.style.opacity = '0';
+                island.style.transform = 'translate(-50%, 10px) scale(0.95)';
+                
+                if (typeof onClose === 'function') {
+                    onClose();
+                }
+                
+                // 重置状态
+                setTimeout(() => {
+                    island.style.pointerEvents = 'none';
+                    islandActions.classList.add('hidden');
+                    islandDiv.style.transform = 'scale(1)';
+                }, 400);
+            }
+            
+            // 响应式处理 - iOS风格的自适应设计
+            function handleResponsive() {
+                const isMobile = window.innerWidth < 768;
+                
+                if (isMobile) {
+                    // iOS移动设备样式
+                    islandDiv.style.minWidth = '160px';
+                    islandDiv.style.maxWidth = '80vw';
+                    islandDiv.style.padding = '10px 16px';
+                    islandContent.style.fontSize = '13px';
+                    islandIcon.style.width = '32px';
+                    islandIcon.style.height = '32px';
+                    btn1.style.padding = '6px 12px';
+                    btn2.style.padding = '6px 12px';
+                } else {
+                    // iOS桌面设备样式
+                    islandDiv.style.minWidth = '180px';
+                    islandDiv.style.maxWidth = '600px';
+                    islandDiv.style.padding = '12px 20px';
+                    islandContent.style.fontSize = '14px';
+                    islandIcon.style.width = '36px';
+                    islandIcon.style.height = '36px';
+                    btn1.style.padding = '7px 16px';
+                    btn2.style.padding = '7px 16px';
+                }
+            }
+            
+            // 添加鼠标悬停效果 - 模拟iOS的触控反馈
+            islandDiv.addEventListener('mouseenter', () => {
+                if (!isExpanded) {
+                    islandDiv.style.transform = 'scale(1.02)';
+                }
+            });
+            
+            islandDiv.addEventListener('mouseleave', () => {
+                if (!isExpanded) {
+                    islandDiv.style.transform = 'scale(1)';
+                }
+            });
+            
+            // 初始化响应式
+            handleResponsive();
+            window.addEventListener('resize', handleResponsive);
+            
+            // 初始化持续显示模式 - 设置默认显示内容（空闲状态动态显示）
+            function initPersistentMode() {
+                // 设置默认内容和样式
+                const defaultType = NOTIFICATION_TYPES.info;
+                islandIcon.classList.add(`bg-${defaultType.color}`);
+                islandIcon.classList.add(`text-${defaultType.textColor}`);
+                islandIcon.style.backgroundImage = defaultType.gradient;
+                islandIcon.innerHTML = `<i class="fa ${defaultType.icon}"></i>`;
+                
+                // 空闲状态显示内容数组
+                const idleContents = [
+                    '系统运行中...',
+                    '等待新消息',
+                    '一切正常',
+                    '随时为您服务'
+                ];
+                
+                let currentIndex = 0;
+                let idleInterval = null;
+                let isShowingNotification = false;
+                
+                // 更新空闲状态内容
+                function updateIdleContent() {
+                    if (isShowingNotification) return;
+                    
+                    // 添加淡入淡出过渡效果
+                    islandContent.style.opacity = '0.7';
+                    
+                    setTimeout(() => {
+                        // 更新内容
+                        currentIndex = (currentIndex + 1) % idleContents.length;
+                        islandContent.textContent = idleContents[currentIndex];
+                        
+                        // 恢复完全不透明度
+                        islandContent.style.opacity = '1';
+                    }, 300);
+                }
+                
+                // 开始定期切换空闲内容
+                function startIdleRotation() {
+                    if (!idleInterval) {
+                        // 立即显示第一个内容
+                        islandContent.textContent = idleContents[0];
+                        
+                        // 添加CSS过渡效果
+                        islandContent.style.transition = 'opacity 0.3s ease';
+                        
+                        // 设置定时器，每5秒切换一次
+                        idleInterval = setInterval(updateIdleContent, 5000);
+                    }
+                }
+                
+                // 暂停空闲内容切换
+                function pauseIdleRotation() {
+                    isShowingNotification = true;
+                }
+                
+                // 恢复空闲内容切换
+                function resumeIdleRotation() {
+                    isShowingNotification = false;
+                    
+                    // 先显示日期5秒
+                    showCurrentDate();
+                    
+                    // 5秒后再恢复空闲内容轮换
+                    setTimeout(() => {
+                        if (!isShowingNotification) {
+                            // 淡入过渡到空闲内容
+                            islandContent.style.opacity = '0.7';
+                            setTimeout(() => {
+                                islandContent.textContent = idleContents[currentIndex];
+                                islandContent.style.opacity = '1';
+                            }, 300);
+                        }
+                    }, 5000);
+                }
+                
+                // 显示当前日期
+                function showCurrentDate() {
+                    // 添加淡入过渡效果
+                    islandContent.style.opacity = '0.7';
+                    
+                    setTimeout(() => {
+                        // 格式化当前日期
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = String(now.getMonth() + 1).padStart(2, '0');
+                        const day = String(now.getDate()).padStart(2, '0');
+                        const weekDay = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
+                        const formattedDate = `${year}年${month}月${day}日 星期${weekDay}`;
+                        
+                        islandContent.textContent = formattedDate;
+                        islandContent.style.opacity = '1';
+                    }, 300);
+                }
+                
+                // 扩展showNotification函数以控制空闲内容切换
+                const originalShowNotification = window.showNotification;
+                window.showNotification = function(options) {
+                    pauseIdleRotation();
+                    return originalShowNotification(options);
+                };
+                
+                // 修改closeNotification函数以恢复空闲内容切换
+                const originalCloseNotification = closeNotification;
+                closeNotification = function(onClose) {
+                    originalCloseNotification(function() {
+                        if (typeof onClose === 'function') {
+                            onClose();
+                        }
+                        // 通知关闭后，恢复空闲内容显示
+                        resumeIdleRotation();
+                    });
+                };
+                
+                // 开始空闲内容轮换
+                startIdleRotation();
+                
+                // 直接显示灵动岛
+                island.style.opacity = '1';
+                island.style.transform = 'translate(-50%, 0) scale(1)';
+                island.style.pointerEvents = 'auto';
+            }
+            
+            // 立即初始化持续显示模式
+            initPersistentMode();
+            
+            // 页面加载后显示一条欢迎通知
+            setTimeout(() => {
+                window.showNotification({
+                    message: '欢迎使用班级学情统计系统！',
+                    type: 'success',
+                    forceClose: false // 持续显示，不自动关闭
+                });
+            }, 1000);
+        }
+        
+        // 初始化灵动岛通知组件
+        document.addEventListener('DOMContentLoaded', initDynamicIsland);
     </script>
         
-        <header class="mb-8 flex items-center justify-between">
+        <header class="mb-8 flex items-center justify-between relative z-10">
             <div class="flex items-center gap-4">
                 <div class="w-20 h-20 rounded-2xl overflow-hidden glass-effect flex items-center justify-center hover-lift transition-all duration-300 shadow-lg float-slow">
+                    
+                    <!-- 移除了不再使用的文本阴影样式 -->
                     <img src="bjbz.png" alt="班级Logo" class="w-14 h-14 object-contain transition-transform duration-700 hover:scale-110">
                 </div>
-                <div>
+                <div class="backdrop-blur-md bg-white/30 bg-opacity-30 dark:bg-black/40 dark:bg-opacity-40 p-3 rounded-xl shadow-md">
                     <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-gradient mb-2 tracking-tight">初一二班学情统计</h1>
                     <p id="class-motto" class="text-accent italic text-lg transition-all duration-500 hover:text-indigo-600"></p>
                 </div>
             </div>
+            <a href="https://dl1447.github.io/Glide-Cloud/" target="_blank" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2 hover-lift">
+                <i class="fa fa-download"></i>
+                <span>获取更新</span>
+            </a>
         </header>
 
         <div class="glass-effect rounded-2xl shadow-xl overflow-hidden mb-8 hover-lift pulse-card">
@@ -2111,100 +2652,30 @@ Licensed under the MIT License
             }
         }
         
-        // Toast提示功能 - 支持多通知堆叠显示
-        let activeToasts = [];
-        
+        // Toast提示功能 - 已转换为使用灵动岛通知系统
         function showToast(message, type = 'info') {
-            // 确保Toast样式已添加
-            if (!document.querySelector('#toast-styles')) {
-                const style = document.createElement('style');
-                style.id = 'toast-styles';
-                style.textContent = `
-                    .toast-notification {
-                        opacity: 0;
-                        transform: translateX(-50%) translateY(20px);
-                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-                        font-weight: 500;
-                        border: 2px solid rgba(255, 255, 255, 0.3);
-                        animation: toastSlideIn 0.3s ease-out forwards;
-                        min-width: 200px;
-                        text-align: center;
-                        transition: all 0.3s ease;
-                    }
-                    
-                    .toast-notification.opacity-100 {
-                        opacity: 1;
-                        transform: translateX(-50%) translateY(0);
-                    }
-                    
-                    .toast-notification.opacity-0 {
-                        opacity: 0;
-                        transform: translateX(-50%) translateY(20px);
-                    }
-                    
-                    @keyframes toastSlideIn {
-                        from {
-                            opacity: 0;
-                            transform: translateX(-50%) translateY(20px);
-                        }
-                        to {
-                            opacity: 1;
-                            transform: translateX(-50%) translateY(0);
-                        }
-                    }
-                `;
-                document.head.appendChild(style);
+            // 调用灵动岛通知系统
+            if (window.showNotification) {
+                // 直接调用灵动岛通知，已支持所有类型
+                window.showNotification({
+                    message: message,
+                    type: type,
+                    duration: 3000
+                });
+            } else {
+                // 降级处理：如果灵动岛未初始化，创建简单的toast
+                console.warn('灵动岛通知系统未初始化，使用降级通知');
+                const toast = document.createElement('div');
+                toast.className = `fixed left-1/2 transform -translate-x-1/2 bottom-4 px-6 py-4 rounded-xl text-white z-50 transition-all duration-300 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-primary'}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                // 简单动画
+                setTimeout(() => toast.remove(), 3000);
             }
-            
-            const toast = document.createElement('div');
-            // 移除glass-effect，使用不透明的纯色背景以提高对比度
-            toast.className = `toast-notification fixed left-1/2 transform -translate-x-1/2 rounded-xl px-6 py-4 text-white z-50 transition-all duration-300 shadow-lg ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-primary'}`;
-            toast.textContent = message;
-            
-            // 添加到文档和活动通知列表
-            document.body.appendChild(toast);
-            activeToasts.push(toast);
-            
-            // 更新所有通知的位置
-            updateToastPositions();
-            
-            // 显示动画已通过CSS实现
-            setTimeout(() => {
-                toast.classList.add('opacity-100');
-            }, 10);
-            
-            // 3秒后自动关闭
-            setTimeout(() => {
-                closeToast(toast);
-            }, 3000);
         }
         
-        // 关闭单个通知并更新其他通知的位置
-        function closeToast(toast) {
-            toast.classList.add('opacity-0');
-            
-            setTimeout(() => {
-                // 从DOM和活动列表中移除
-                toast.remove();
-                
-                const index = activeToasts.indexOf(toast);
-                if (index !== -1) {
-                    activeToasts.splice(index, 1);
-                }
-                
-                // 更新剩余通知的位置
-                updateToastPositions();
-            }, 300);
-        }
-        
-        // 更新所有通知的位置，实现堆叠效果
-        function updateToastPositions() {
-            activeToasts.forEach((toast, index) => {
-                // 从下往上堆叠，第一个通知在最底部
-                const bottomPosition = 12 + (index * 70); // 12rem底部边距，每个通知之间70px间隔
-                toast.style.bottom = bottomPosition + 'px';
-            });
-        }
+        // 通知系统已迁移至灵动岛，这些函数已不再需要
         
         // 有趣的事实数据 - 优化版（移除重复内容并扩充新知识）
         const funFacts = [
@@ -3195,8 +3666,13 @@ function updateCurrentDate() {
             const ratingContainer = courseDiv.querySelector('[data-field="rating"]');
             const stars = ratingContainer.querySelectorAll('.fa-star');
             stars.forEach(star => {
-                star.addEventListener('click', function() {
-                    const rating = parseInt(this.dataset.rating);
+                star.addEventListener('click', function(e) {
+                    const starRating = parseInt(this.dataset.rating);
+                    // 计算点击位置，左侧为半星，右侧为满星
+                    const rect = this.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const isHalfStar = clickX < rect.width / 2;
+                    const rating = isHalfStar ? starRating - 0.5 : starRating;
                     
                     // 检查是否有分层信息
                     if (this.dataset.layer) {
@@ -3231,9 +3707,15 @@ function updateCurrentDate() {
                     }, 500);
                 });
                 
-                // 添加悬停效果
-                star.addEventListener('mouseenter', function() {
-                    const rating = parseInt(this.dataset.rating);
+                // 添加悬停效果 - 支持半星预览
+                star.addEventListener('mouseenter', function(e) {
+                    const starRating = parseInt(this.dataset.rating);
+                    
+                    // 计算鼠标位置，用于半星预览
+                    const rect = this.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const isHalfStarHover = mouseX < rect.width / 2;
+                    const hoverRating = isHalfStarHover ? starRating - 0.5 : starRating;
                     
                     if (this.dataset.layer) {
                         // 分层评分悬停效果
@@ -3241,7 +3723,7 @@ function updateCurrentDate() {
                         const layerStars = ratingContainer.querySelectorAll(`[data-layer="${layer}"]`);
                         layerStars.forEach(s => {
                             const sRating = parseInt(s.dataset.rating);
-                            if (sRating <= rating) {
+                            if (sRating <= Math.floor(hoverRating)) {
                                 s.classList.add('scale-125');
                             }
                         });
@@ -3249,11 +3731,16 @@ function updateCurrentDate() {
                         // 普通评分悬停效果
                         stars.forEach(s => {
                             const sRating = parseInt(s.dataset.rating);
-                            if (sRating <= rating) {
+                            if (sRating <= Math.floor(hoverRating)) {
                                 s.classList.add('scale-125');
                             }
                         });
                     }
+                });
+                
+                // 鼠标移动时实时更新半星预览
+                star.addEventListener('mousemove', function(e) {
+                    // 可以在这里添加更精细的半星实时预览逻辑
                 });
                 
                 star.addEventListener('mouseleave', function() {
@@ -3734,11 +4221,18 @@ function updateCurrentDate() {
         function updateStarDisplay(stars, rating) {
             stars.forEach(star => {
                 const starRating = parseInt(star.dataset.rating);
-                if (starRating <= rating) {
+                
+                // 清除所有状态类
+                star.classList.remove('star-active', 'star-inactive', 'star-half');
+                
+                if (starRating <= Math.floor(rating)) {
+                    // 完全激活的星星
                     star.classList.add('star-active');
-                    star.classList.remove('star-inactive');
+                } else if (starRating === Math.ceil(rating) && rating % 1 !== 0) {
+                    // 半颗星（使用伪元素实现）
+                    star.classList.add('star-half');
                 } else {
-                    star.classList.remove('star-active');
+                    // 非激活的星星
                     star.classList.add('star-inactive');
                 }
             });
